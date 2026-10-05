@@ -1,0 +1,44 @@
+<!-- templates/student/my_events.html -->
+{% extends "base.html" %}
+{% block title %}My events · Campus Events{% endblock %}
+{% block content %}
+<h1>My events</h1>
+<p class="lede">Everything you have registered for, newest first.</p>
+
+{% if events %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Event</th><th>When</th><th>Venue</th><th>Attendance</th><th>Next step</th></tr>
+    </thead>
+    <tbody>
+      {% for e in events %}
+      <tr>
+        <td><a href="{{ url_for('student.event_detail', event_id=e.id) }}">{{ e.title }}</a></td>
+        <td>{{ e.start_datetime|dt }}</td>
+        <td>{{ e.venue }}</td>
+        <td>
+          {% if e.attended %}<span class="tag tag-approved">Present</span>
+          {% elif e.end_datetime < now %}<span class="tag tag-rejected">Not recorded</span>
+          {% else %}<span class="tag tag-pending">Pending</span>{% endif %}
+        </td>
+        <td>
+          {% if e.end_datetime >= now %}
+            <a class="btn btn-outline btn-small" href="{{ url_for('student.attendance', event_id=e.id) }}">Attendance</a>
+          {% elif e.attended and not e.feedback_given %}
+            <a class="btn btn-outline btn-small" href="{{ url_for('student.feedback', event_id=e.id) }}">Give feedback</a>
+          {% elif e.attended %}
+            <a class="btn btn-outline btn-small" href="{{ url_for('student.certificate_download', event_id=e.id) }}">Certificate</a>
+          {% else %}
+            &mdash;
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="empty"><p>No registrations yet.</p><a class="btn" href="{{ url_for('student.events') }}">Browse events</a></div>
+{% endif %}
+{% endblock %}

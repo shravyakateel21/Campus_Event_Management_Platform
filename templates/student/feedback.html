@@ -1,0 +1,26 @@
+<!-- templates/student/feedback.html -->
+{% extends "base.html" %}
+{% block title %}Feedback · {{ event.title }}{% endblock %}
+{% block content %}
+<h1>How was {{ event.title }}?</h1>
+<p class="lede">Your rating helps the organizers plan the next one. Feedback is shown to them with your name.</p>
+
+<form class="card form" method="post">
+  <div class="field">
+    <label>Rating</label>
+    <div class="rating">
+      {% for value in range(1, 6) %}
+        <input type="radio" id="r{{ value }}" name="rating" value="{{ value }}"
+               {% if event.my_feedback and event.my_feedback.rating == value %}checked{% endif %}>
+        <label for="r{{ value }}">{{ value }}</label>
+      {% endfor %}
+    </div>
+    <span class="hint">1 is poor, 5 is excellent.</span>
+  </div>
+  <div class="field">
+    <label for="comments">What worked, what could be better?</label>
+    <textarea id="comments" name="comments" maxlength="1000">{{ comments or '' }}</textarea>
+  </div>
+  <button class="btn" type="submit">{{ 'Update feedback' if event.my_feedback else 'Submit feedback' }}</button>
+</form>
+{% endblock %}

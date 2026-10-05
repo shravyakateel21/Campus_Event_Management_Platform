@@ -1,0 +1,74 @@
+<!-- templates/student/event_detail.html -->
+{% extends "base.html" %}
+{% block title %}{{ event.title }} · Campus Events{% endblock %}
+{% block content %}
+<span class="tag tag-accent">{{ event.category }}</span>
+<h1>{{ event.title }}</h1>
+<p class="lede">Organized by {{ event.organizer_name }}</p>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3>Event details</h3>
+    <div class="net-line"><span>Starts</span><b>{{ event.start_datetime|dt }}</b></div>
+    <div class="net-line"><span>Ends</span><b>{{ event.end_datetime|dt }}</b></div>
+    <div class="net-line"><span>Venue</span><b>{{ event.venue }}</b></div>
+    <div class="net-line"><span>Seats</span><b>{{ event.registered_count }} / {{ event.capacity }}</b></div>
+    <div class="net-line"><span>Registration closes</span><b>{{ event.registration_deadline|dt }}</b></div>
+    {% if event.wifi_ssid %}
+      <div class="net-line"><span>Attendance network</span><b>{{ event.wifi_ssid }}</b></div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Your status</h3>
+    {% if event.my_registration and event.my_registration.status == 'registered' %}
+      <span class="tag tag-approved">Registered on {{ event.my_registration.registered_at|dt('%d %b %Y') }}</span>
+    {% else %}
+      <span class="tag">Not registered</span>
+    {% endif %}
+
+    <ul class="checklist" style="margin-top:14px">
+      <li><span class="mark {{ 'yes' if event.my_attendance else 'no' }}">{{ '+' if event.my_attendance else '-' }}</span>
+        <span>Attendance
+        {%- if event.my_attendance %} recorded {{ event.my_attendance.marked_at|dt('%d %b, %I:%M %p') }}
+        {%- else %} not recorded yet{% endif %}</span></li>
+      <li><span class="mark {{ 'yes' if event.my_feedback else 'no' }}">{{ '+' if event.my_feedback else '-' }}</span>
+        <span>Feedback {{ 'submitted' if event.my_feedback else 'not submitted' }}</span></li>
+      <li><span class="mark {{ 'yes' if event.my_certificate else 'no' }}">{{ '+' if event.my_certificate else '-' }}</span>
+        <span>Certificate {{ event.my_certificate.certificate_code if event.my_certificate else 'issued once attendance is recorded' }}</span></li>
+    </ul>
+
+    <div class="event-actions">
+      {% if can_register %}
+        <form method="post" action="{{ url_for('student.register_for_event', event_id=event.id) }}">
+          <button class="btn" type="submit">Register</button>
+        </form>
+      {% elif event.my_registration and event.my_registration.status == 'registered' %}
+        {% if attendance_opens <= now <= attendance_closes %}
+          <a class="btn" href="{{ url_for('student.attendance', event_id=event.id) }}">Mark attendance</a>
+        {% elif now < attendance_opens %}
+          <a class="btn btn-outline" href="{{ url_for('student.attendance', event_id=event.id) }}">Attendance opens {{ attendance_opens|dt('%d %b, %I:%M %p') }}</a>
+        {% endif %}
+        {% if event.end_datetime < now and event.my_attendance %}
+          <a class="btn btn-outline" href="{{ url_for('student.feedback', event_id=event.id) }}">{{ 'Edit feedback' if event.my_feedback else 'Give feedback' }}</a>
+          <a class="btn btn-outline" href="{{ url_for('student.certificate_download', event_id=event.id) }}">Download certificate</a>
+        {% endif %}
+        {% if event.start_datetime > now and not event.my_attendance %}
+          <form method="post" action="{{ url_for('student.cancel_registration', event_id=event.id) }}">
+            <button class="btn btn-danger btn-small" type="submit">Cancel registration</button>
+          </form>
+        {% endif %}
+      {% else %}
+        <span class="tag">{{ reason }}</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if event.description %}
+  <div class="card" style="margin-top:14px">
+    <h3>About this event</h3>
+    <p style="white-space:pre-line;margin:0">{{ event.description }}</p>
+  </div>
+{% endif %}
+{% endblock %}

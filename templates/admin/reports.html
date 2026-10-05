@@ -1,0 +1,67 @@
+<!-- templates/admin/reports.html -->
+{% extends "base.html" %}
+{% block title %}Reports · Administration{% endblock %}
+{% block content %}
+<h1>Reports</h1>
+<p class="lede">Turnout is the share of registered students whose attendance was recorded.</p>
+
+<h2>By event</h2>
+{% if per_event %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Event</th><th>Date</th><th>Organizer</th><th class="num">Registered</th><th class="num">Present</th><th class="num">Turnout</th><th class="num">Rating</th><th class="num">Certificates</th></tr></thead>
+    <tbody>
+      {% for r in per_event %}
+      <tr>
+        <td><a href="{{ url_for('organizer.event_detail', event_id=r.id) }}">{{ r.title }}</a>
+            <div class="meta">{{ r.category }}</div></td>
+        <td>{{ r.start_datetime|dt('%d %b %Y') }}</td>
+        <td>{{ r.organizer_name }}</td>
+        <td class="num">{{ r.registered_count }}</td>
+        <td class="num">{{ r.attended_count }}</td>
+        <td class="num">{{ r.turnout }}%</td>
+        <td class="num">{{ r.avg_rating or '-' }}</td>
+        <td class="num">{{ r.certificate_count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="empty"><p>No approved events yet.</p></div>
+{% endif %}
+
+<div class="grid grid-2" style="margin-top:22px">
+  <div class="card">
+    <h3>Registrations by category</h3>
+    {% if by_category %}
+      <div class="table-wrap" style="border:none">
+        <table>
+          <thead><tr><th>Category</th><th class="num">Events</th><th class="num">Registrations</th></tr></thead>
+          <tbody>
+            {% for c in by_category %}
+            <tr><td>{{ c.category }}</td><td class="num">{{ c.event_count }}</td><td class="num">{{ c.registrations }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}<p class="meta">No data yet.</p>{% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Most active students</h3>
+    {% if top_students %}
+      <div class="table-wrap" style="border:none">
+        <table>
+          <thead><tr><th>Student</th><th>USN</th><th class="num">Events attended</th></tr></thead>
+          <tbody>
+            {% for s in top_students %}
+            <tr><td>{{ s.name }}</td><td>{{ s.usn or '-' }}</td><td class="num">{{ s.events_attended }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}<p class="meta">No attendance recorded yet.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

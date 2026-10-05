@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Campus Events{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="{{ url_for('index') }}">
+    <span class="brand-mark">CE</span>
+    <span class="brand-text">Campus Events<small>{{ college_name }}</small></span>
+  </a>
+
+  {% if g.user %}
+  <nav class="nav">
+    {% if g.user.role == 'student' %}
+      <a href="{{ url_for('student.dashboard') }}">Home</a>
+      <a href="{{ url_for('student.events') }}">Events</a>
+      <a href="{{ url_for('student.my_events') }}">My events</a>
+      <a href="{{ url_for('student.certificate_list') }}">Certificates</a>
+    {% elif g.user.role == 'organizer' %}
+      <a href="{{ url_for('organizer.dashboard') }}">My events</a>
+      <a href="{{ url_for('organizer.create_event') }}">Create event</a>
+    {% else %}
+      <a href="{{ url_for('admin.dashboard') }}">Home</a>
+      <a href="{{ url_for('admin.events') }}">Events</a>
+      <a href="{{ url_for('admin.users') }}">Users</a>
+      <a href="{{ url_for('admin.reports') }}">Reports</a>
+    {% endif %}
+  </nav>
+
+  <div class="account">
+    <span class="account-name">{{ g.user.name }}<small>{{ g.user.role }}</small></span>
+    <form method="post" action="{{ url_for('auth.logout') }}">
+      <button class="btn btn-quiet" type="submit">Log out</button>
+    </form>
+  </div>
+  {% endif %}
+</header>
+
+<main class="page">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flashes">
+        {% for category, message in messages %}
+          <p class="flash flash-{{ category }}">{{ message }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+  Campus Event Management Platform · attendance verified on the venue Wi-Fi
+</footer>
+</body>
+</html>

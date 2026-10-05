@@ -1,0 +1,55 @@
+<!-- templates/admin/events.html -->
+{% extends "base.html" %}
+{% block title %}Events · Administration{% endblock %}
+{% block content %}
+<h1>All events</h1>
+<p class="lede">Every event on the platform, whatever its status.</p>
+
+<form method="get" class="card" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+  <div class="field" style="min-width:200px">
+    <label for="status">Status</label>
+    <select id="status" name="status">
+      <option value="">All</option>
+      {% for s in ['pending', 'approved', 'rejected', 'cancelled'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s|capitalize }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn" type="submit">Apply</button>
+</form>
+
+{% if events %}
+<div class="table-wrap" style="margin-top:16px">
+  <table>
+    <thead><tr><th>Event</th><th>When</th><th>Organizer</th><th>Status</th><th class="num">Reg.</th><th class="num">Present</th><th>Decision</th></tr></thead>
+    <tbody>
+      {% for e in events %}
+      <tr>
+        <td><a href="{{ url_for('organizer.event_detail', event_id=e.id) }}">{{ e.title }}</a>
+            <div class="meta">{{ e.venue }}</div></td>
+        <td>{{ e.start_datetime|dt }}</td>
+        <td>{{ e.organizer_name }}</td>
+        <td><span class="tag tag-{{ e.status }}">{{ e.status }}</span></td>
+        <td class="num">{{ e.registered_count }}</td>
+        <td class="num">{{ e.attended_count }}</td>
+        <td>
+          <form method="post" action="{{ url_for('admin.review_event', event_id=e.id) }}" style="display:flex;gap:6px">
+            {% if e.status != 'approved' %}
+              <button class="btn btn-small" name="decision" value="approved" type="submit">Approve</button>
+            {% endif %}
+            {% if e.status == 'pending' %}
+              <button class="btn btn-danger btn-small" name="decision" value="rejected" type="submit">Reject</button>
+            {% elif e.status == 'approved' %}
+              <button class="btn btn-danger btn-small" name="decision" value="cancelled" type="submit">Cancel</button>
+            {% endif %}
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="empty" style="margin-top:16px"><p>No events with that status.</p></div>
+{% endif %}
+{% endblock %}

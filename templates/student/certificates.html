@@ -1,0 +1,33 @@
+<!-- templates/student/certificates.html -->
+{% extends "base.html" %}
+{% block title %}Certificates · Campus Events{% endblock %}
+{% block content %}
+<h1>Certificates</h1>
+<p class="lede">A certificate is issued for every event where your attendance was recorded, once the event has ended.</p>
+
+{% if rows %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Event</th><th>Date</th><th>Certificate ID</th><th>Download</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.title }}</td>
+        <td>{{ r.start_datetime|dt('%d %b %Y') }}</td>
+        <td>{{ r.certificate_code or 'Not issued yet' }}</td>
+        <td>
+          {% if r.end_datetime < now %}
+            <a class="btn btn-outline btn-small" href="{{ url_for('student.certificate_download', event_id=r.id) }}">PDF</a>
+          {% else %}
+            <span class="tag tag-pending">After the event</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="empty"><p>No certificates yet. They appear here after your attendance is recorded at an event.</p></div>
+{% endif %}
+{% endblock %}

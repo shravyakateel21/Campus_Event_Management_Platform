@@ -1,0 +1,54 @@
+<!-- templates/student/attendance.html -->
+{% extends "base.html" %}
+{% block title %}Attendance · {{ event.title }}{% endblock %}
+{% block content %}
+<div class="attendance">
+  <div>
+    <h1>Mark attendance</h1>
+    <p class="lede">{{ event.title }} · {{ event.venue }} · {{ event.start_datetime|dt }}</p>
+  </div>
+
+  {% if event.my_attendance %}
+    <div class="notice notice-ok">
+      <h3>Attendance recorded</h3>
+      <p>Marked at {{ event.my_attendance.marked_at|dt('%d %b %Y, %I:%M %p') }} from {{ event.my_attendance.ip_address }}.</p>
+    </div>
+  {% else %}
+    <div class="notice {{ 'notice-ok' if verified else 'notice-bad' }}">
+      <h3>{{ 'On the event network' if verified else 'Not on the event network' }}</h3>
+      <p>{{ network_message }}</p>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <h3>Network check</h3>
+    <div class="net-line"><span>Required Wi-Fi</span><b>{{ event.wifi_ssid or 'Campus network' }}</b></div>
+    <div class="net-line"><span>Your address</span><b>{{ client_ip }}</b></div>
+    <div class="net-line"><span>Attendance window</span><b>{{ opens_at|dt('%I:%M %p') }} to {{ closes_at|dt('%I:%M %p') }}</b></div>
+  </div>
+
+  {% if not event.my_attendance %}
+    {% if blockers %}
+      <div class="notice notice-warn">
+        <h3>Not open for you yet</h3>
+        {% for item in blockers %}<p>{{ item }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    <form class="card form" method="post">
+      <div class="field">
+        <label for="ssid">Wi-Fi name you are connected to (optional)</label>
+        <input type="text" id="ssid" name="ssid" placeholder="{{ event.wifi_ssid or 'Campus-WiFi' }}" maxlength="64">
+        <span class="hint">Recorded in the organizer's report. Your network address is what verifies you.</span>
+      </div>
+      <button class="btn" type="submit" {% if not verified or blockers %}disabled{% endif %}>Mark me present</button>
+      {% if not verified %}
+        <p class="hint">Join {{ event.wifi_ssid or 'the venue Wi-Fi' }} and
+          <a href="{{ url_for('student.attendance', event_id=event.id) }}">check again</a>.</p>
+      {% endif %}
+    </form>
+  {% endif %}
+
+  <p><a href="{{ url_for('student.event_detail', event_id=event.id) }}">Back to event</a></p>
+</div>
+{% endblock %}

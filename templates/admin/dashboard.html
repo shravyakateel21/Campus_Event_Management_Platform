@@ -1,0 +1,62 @@
+<!-- templates/admin/dashboard.html -->
+{% extends "base.html" %}
+{% block title %}Administration · Campus Events{% endblock %}
+{% block content %}
+<h1>Platform overview</h1>
+<p class="lede">Approve what organizers submit, keep accounts in order, and check how events are running.</p>
+
+<div class="grid grid-4">
+  <div class="stat"><b>{{ stats.students }}</b><span>Students</span></div>
+  <div class="stat"><b>{{ stats.organizers }}</b><span>Organizers</span></div>
+  <div class="stat"><b>{{ stats.events }}</b><span>Events</span></div>
+  <div class="stat"><b>{{ stats.pending }}</b><span>Awaiting approval</span></div>
+  <div class="stat"><b>{{ stats.registrations }}</b><span>Registrations</span></div>
+  <div class="stat"><b>{{ stats.attendance }}</b><span>Attendance marked</span></div>
+  <div class="stat"><b>{{ stats.certificates }}</b><span>Certificates issued</span></div>
+</div>
+
+<h2>Waiting for approval</h2>
+{% if pending %}
+  <div class="grid grid-2">
+    {% for e in pending %}
+      <article class="card event-card">
+        <h3>{{ e.title }}</h3>
+        <div class="meta">{{ e.start_datetime|dt }} · {{ e.venue }}</div>
+        <div class="meta">Submitted by {{ e.organizer_name }} · {{ e.capacity }} seats</div>
+        <div class="meta">Network: {{ e.wifi_cidr or e.wifi_public_ip or 'not set' }}</div>
+        <form method="post" action="{{ url_for('admin.review_event', event_id=e.id) }}" class="form" style="gap:8px;margin-top:8px">
+          <input type="text" name="review_note" placeholder="Note for the organizer (optional)">
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-small" name="decision" value="approved" type="submit">Approve</button>
+            <button class="btn btn-danger btn-small" name="decision" value="rejected" type="submit">Reject</button>
+            <a class="btn btn-quiet btn-small" href="{{ url_for('organizer.event_detail', event_id=e.id) }}">Open</a>
+          </div>
+        </form>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty"><p>Nothing is waiting for approval.</p></div>
+{% endif %}
+
+<h2>Coming up</h2>
+{% if upcoming %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Event</th><th>When</th><th>Organizer</th><th class="num">Registered</th></tr></thead>
+    <tbody>
+      {% for e in upcoming %}
+      <tr>
+        <td><a href="{{ url_for('organizer.event_detail', event_id=e.id) }}">{{ e.title }}</a></td>
+        <td>{{ e.start_datetime|dt }}</td>
+        <td>{{ e.organizer_name }}</td>
+        <td class="num">{{ e.registered_count }} / {{ e.capacity }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="empty"><p>No approved events are scheduled.</p></div>
+{% endif %}
+{% endblock %}

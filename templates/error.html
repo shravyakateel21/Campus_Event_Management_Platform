@@ -1,0 +1,10 @@
+<!-- templates/error.html -->
+{% extends "base.html" %}
+{% block title %}{{ code }} · Campus Events{% endblock %}
+{% block content %}
+<div class="empty">
+  <h1>{{ code }}</h1>
+  <p>{{ message }}</p>
+  <a class="btn btn-outline" href="{{ url_for('index') }}">Back to home</a>
+</div>
+{% endblock %}

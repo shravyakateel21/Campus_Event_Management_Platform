@@ -1,0 +1,54 @@
+<!-- templates/student/dashboard.html -->
+{% extends "base.html" %}
+{% block title %}Home · Campus Events{% endblock %}
+{% block content %}
+<h1>Hello, {{ g.user.name.split()[0] }}</h1>
+<p class="lede">Find an event, register, and mark attendance from the venue on the day.</p>
+
+<div class="grid grid-4">
+  <div class="stat"><b>{{ stats.registered }}</b><span>Registrations</span></div>
+  <div class="stat"><b>{{ stats.attended }}</b><span>Events attended</span></div>
+  <div class="stat"><b>{{ stats.certificates }}</b><span>Certificates</span></div>
+</div>
+
+<h2>Your next events</h2>
+{% if my_next %}
+  <div class="grid grid-2">
+    {% for e in my_next %}
+      <article class="card event-card">
+        <span class="tag tag-accent">{{ e.category }}</span>
+        <h3>{{ e.title }}</h3>
+        <div class="meta">{{ e.start_datetime|dt }} · {{ e.venue }}</div>
+        <div class="event-actions">
+          <a class="btn btn-outline btn-small" href="{{ url_for('student.event_detail', event_id=e.id) }}">Open</a>
+          <a class="btn btn-small" href="{{ url_for('student.attendance', event_id=e.id) }}">Mark attendance</a>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty">
+    <p>You have not registered for anything yet.</p>
+    <a class="btn" href="{{ url_for('student.events') }}">Browse events</a>
+  </div>
+{% endif %}
+
+<h2>Open for registration</h2>
+{% if upcoming %}
+  <div class="grid grid-2">
+    {% for e in upcoming %}
+      <article class="card event-card">
+        <span class="tag tag-accent">{{ e.category }}</span>
+        <h3>{{ e.title }}</h3>
+        <div class="meta">{{ e.start_datetime|dt }} · {{ e.venue }}</div>
+        <div class="meta">{{ e.registered_count }} of {{ e.capacity }} seats taken</div>
+        <div class="event-actions">
+          <a class="btn btn-outline btn-small" href="{{ url_for('student.event_detail', event_id=e.id) }}">View details</a>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty"><p>No events are scheduled right now. Check back soon.</p></div>
+{% endif %}
+{% endblock %}

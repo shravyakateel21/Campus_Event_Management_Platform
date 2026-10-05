@@ -1,0 +1,12 @@
+<!-- templates/student/profile.html -->
+{% extends "base.html" %}
+{% block title %}Profile · Campus Events{% endblock %}
+{% block content %}
+<h1>{{ user.name }}</h1>
+<div class="card" style="max-width:520px">
+  <div class="net-line"><span>Email</span><b>{{ user.email }}</b></div>
+  <div class="net-line"><span>USN</span><b>{{ user.usn or '-' }}</b></div>
+  <div class="net-line"><span>Department</span><b>{{ user.department or '-' }}</b></div>
+  <div class="net-line"><span>Role</span><b>{{ user.role }}</b></div>
+</div>
+{% endblock %}

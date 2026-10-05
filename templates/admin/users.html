@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Students · Administration{% endblock %}
+{% block content %}
+<div class="split">
+  <div>
+    <h1>Students</h1>
+    <p class="lede">Everyone here has signed in at least once. Organizers and administrators are added and managed separately.</p>
+  </div>
+  <a class="btn" href="{{ url_for('admin.create_user') }}">Add organizer or admin</a>
+</div>
+
+<form method="get" class="card" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+  <div class="field" style="flex:2;min-width:200px">
+    <label for="q">Search</label>
+    <input type="text" id="q" name="q" value="{{ keyword }}" placeholder="Name or email">
+  </div>
+  <button class="btn" type="submit">Apply</button>
+</form>
+
+{% if users %}
+<div class="table-wrap" style="margin-top:16px">
+  <table>
+    <thead><tr><th>Name</th><th>Email</th><th>Last logged in</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.name }}<div class="meta">{{ u.department or '' }}</div></td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.last_login|dt }}</td>
+        <td>{% if u.is_active %}<span class="tag tag-approved">Active</span>{% else %}<span class="tag tag-rejected">Deactivated</span>{% endif %}</td>
+        <td>
+          <form method="post" action="{{ url_for('admin.toggle_user', user_id=u.id) }}">
+            <button class="btn btn-quiet btn-small" type="submit">{{ 'Deactivate' if u.is_active else 'Activate' }}</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="empty" style="margin-top:16px"><p>No students have logged in yet.</p></div>
+{% endif %}
+{% endblock %}
