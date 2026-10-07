@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ college_name }} · Campus Events</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script>document.documentElement.classList.add('js')</script>
+</head>
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('#menu a[href^="#"]'));
+    var sections = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+    var locked = false, lockTimer;
+
+    function setActive(link) {
+      links.forEach(function (a) { a.classList.remove('on'); });   // clears Home and all others
+      if (link) link.classList.add('on');
+    }
+
+    // click: underline the clicked link only, and ignore scroll updates while the page is scrolling there
+    links.forEach(function (a) {
+      a.addEventListener('click', function () {
+        setActive(a);
+        locked = true;
+        clearTimeout(lockTimer);
+        lockTimer = setTimeout(function () { locked = false; }, 900);
+        document.getElementById('menu').classList.remove('open');
+      });
+    });
+
+    // scroll: underline the section currently in view
+    function onScroll() {
+      if (locked) return;
+      var y = window.scrollY + 140;
+      var current = 0;
+      sections.forEach(function (s, i) { if (s && s.offsetTop <= y) current = i; });
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
+        current = sections.length - 1;
+      }
+      setActive(links[current]);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+</script>
+<body class="hp">
+
+<div class="topbar"><div class="wrap">
+  <span>{{ college_name }} &nbsp;|&nbsp; Official campus event platform</span>
+  <nav>
+    <a href="{{ url_for('auth.login') }}">Log in</a>
+    <a class="pill" href="{{ url_for('auth.register') }}">Student sign up</a>
+  </nav>
+</div></div>
+
+<header class="site"><div class="wrap">
+  <a class="brand" href="{{ url_for('index') }}">
+    <span class="crest">AJ</span><span><b>Campus Events</b><small>{{ college_name }}</small></span>
+  </a>
+  <button class="burger" aria-label="Menu" aria-expanded="false"
+    onclick="var m=document.getElementById('menu');var o=m.classList.toggle('open');this.setAttribute('aria-expanded',o)">☰</button>
+  <nav class="menu" id="menu">
+    <a href="#top">Home</a>
+    <a href="#about">About</a>
+    <a href="#roles">Who it's for</a>
+    <a href="#upcoming">Upcoming events</a>
+    <a href="#how">How it works</a>
+    <a class="btn green" href="{{ url_for('auth.login') }}" style="color:#fff;border:0">Log in</a>
+  </nav>
+</div></header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="wrap" style="padding-top:14px">
+    {% for category, message in messages %}
+      <p class="flash flash-{{ category }}">{{ message }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<section class="hero" id="top" style="padding:0"><div class="wrap"><div class="copy">
+  <h1>Discover Events,<br>Build <span>Experiences</span></h1>
+  <p>Find workshops, fests and talks on campus, register in one tap, and collect certificates for every event you attend.</p>
+  <a class="btn gold" href="{{ url_for('auth.register') }}">Create student account</a>
+  <a class="btn ghost" href="#upcoming">See upcoming events</a>
+</div></div></section>
+
+<div class="wrap strip"><ul>
+  <li><div class="ico">🗓️</div><strong>Event Discovery</strong><span>Browse approved events by category</span></li>
+  <li><div class="ico">📝</div><strong>Easy Registration</strong><span>Register before the deadline, cancel anytime</span></li>
+  <li><div class="ico">📶</div><strong>Wi-Fi Attendance</strong><span>Attendance verified on the venue network</span></li>
+  <li><div class="ico">🎓</div><strong>Certificates</strong><span>Download a PDF after you attend</span></li>
+  <li><div class="ico">💬</div><strong>Feedback</strong><span>Rate events and help organizers improve</span></li>
+</ul></div>
+
+<section id="about"><div class="wrap about">
+  <div class="ph" role="img" aria-label="Campus event">
+  <img class="college-img" src="{{ url_for('static', filename='img/college.webp') }}" alt="{{ college_name }} campus"></div>
+  <div>
+    <span class="tag">Welcome to</span>
+    <h2 class="t">{{ college_name }} Events</h2>
+    <p>One place for every student event on campus. Organizers submit events for approval, students register and attend, and the college keeps clear records of participation, feedback and certificates.</p>
+    <a class="btn green" href="{{ url_for('auth.login') }}">Log in to continue</a>
+  </div>
+</div></section>
+
+<section id="roles"><div class="wrap explore">
+  <div>
+    <span class="tag">One login, three roles</span>
+    <h2 class="t">Built for everyone on campus</h2>
+    <div class="cards4">
+      <div class="card"><div class="ico">🎒</div><h3>Students</h3><p>Browse events, register, mark attendance and download certificates.</p></div>
+      <div class="card"><div class="ico">📣</div><h3>Organizers</h3><p>Create events, track registrations, mark attendance and read feedback.</p></div>
+      <div class="card"><div class="ico">🛡️</div><h3>Administrators</h3><p>Approve events, manage users and view participation reports.</p></div>
+      <div class="card"><div class="ico">📊</div><h3>Reports</h3><p>Clear numbers on registrations, attendance and feedback.</p></div>
+    </div>
+  </div>
+  <div class="growth">
+  <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Students at an event">
+  <div class="badge"><b>Learn • Participate • Grow</b><small>Every event counts</small></div>
+</div>
+</div></section>
+
+<section id="upcoming"><div class="wrap">
+  <span class="tag">What's on</span>
+  <h2 class="t">Upcoming Events</h2>
+  {% if upcoming %}
+  <div class="events">
+    {% for e in upcoming %}
+    <article class="ev">
+      <div class="date"><b>{{ e.start_datetime.strftime('%d') }}</b><small>{{ e.start_datetime.strftime('%b %Y') }} · {{ e.start_datetime.strftime('%I:%M %p') }}</small></div>
+      <div class="txt">
+        <span class="cat">{{ e.category }}</span>
+        <h3>{{ e.title }}</h3>
+        <p>{{ e.venue }}</p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty-note">No events are open right now. Check back soon.</p>
+  {% endif %}
+  <div class="center"><a class="btn sm" href="{{ url_for('auth.login') }}">Log in to register</a></div>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <span class="tag">Getting started</span>
+  <h2 class="t">How it works</h2>
+  <ol class="steps" style="list-style:none;margin:0;padding:0">
+    <li><strong>Sign up</strong><span>Create a student account with your college email and USN.</span></li>
+    <li><strong>Register</strong><span>Pick an approved event and register before the deadline.</span></li>
+    <li><strong>Attend</strong><span>Connect to the venue Wi-Fi and mark your attendance.</span></li>
+    <li><strong>Get certified</strong><span>Share feedback, then download your certificate.</span></li>
+  </ol>
+</div></section>
+
+<section class="admit"><div class="wrap"><div class="box">
+  <div><h2>New here? Join the next event.</h2><p>Student accounts take a minute to create. Organizer accounts are issued by the administrator.</p></div>
+  <a class="btn gold" href="{{ url_for('auth.register') }}">Create account</a>
+</div></div></section>
+
+<footer><div class="wrap">
+  <div class="fcols">
+    <div><div class="brand"><span class="crest">AJ</span><span><b style="color:#fff">Campus Events</b><small>{{ college_name }}</small></span></div>
+      <p style="margin-top:12px">Event registration, attendance and certificates for the whole campus.</p></div>
+    <div><h4>Quick links</h4><ul><li><a href="#about">About</a></li><li><a href="#upcoming">Upcoming events</a></li><li><a href="#how">How it works</a></li></ul></div>
+    <div><h4>Account</h4><ul><li><a href="{{ url_for('auth.login') }}">Log in</a></li><li><a href="{{ url_for('auth.register') }}">Student sign up</a></li></ul></div>
+    <div><h4>Note</h4><p>Attendance is verified on the venue Wi-Fi.</p></div>
+  </div>
+  <div class="copy-bar">© {{ now.year }} {{ college_name }}. All rights reserved.</div>
+</div></footer>
+
+</body>
+</html>
