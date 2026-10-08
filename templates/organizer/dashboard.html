@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}My events · Campus Events{% endblock %}
+{% block content %}
+<div class="split">
+  <div>
+    <h1>My events</h1>
+    <p class="lede">Create an event, watch registrations, and track who turned up.</p>
+  </div>
+  <a class="btn" href="{{ url_for('organizer.create_event') }}">Create event</a>
+</div>
+
+<div class="grid grid-4">
+  <div class="stat"><b>{{ stats.events }}</b><span>Events</span></div>
+  <div class="stat"><b>{{ stats.pending }}</b><span>Awaiting approval</span></div>
+  <div class="stat"><b>{{ stats.registrations }}</b><span>Registrations</span></div>
+  <div class="stat"><b>{{ stats.attendance }}</b><span>Attendance marked</span></div>
+</div>
+
+{% if events %}
+<div class="table-wrap" style="margin-top:20px">
+  <table>
+    <thead><tr><th>Event</th><th>When</th><th>Status</th><th class="num">Registered</th><th class="num">Present</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for e in events %}
+      <tr>
+        <td><a href="{{ url_for('organizer.event_detail', event_id=e.id) }}">{{ e.title }}</a>
+            <div class="meta">{{ e.venue }}</div></td>
+        <td>{{ e.start_datetime|dt }}</td>
+        <td><span class="tag tag-{{ e.status }}">{{ e.status }}</span>
+          {% if e.review_note %}<div class="meta">{{ e.review_note }}</div>{% endif %}</td>
+        <td class="num">{{ e.registered_count }} / {{ e.capacity }}</td>
+        <td class="num">{{ e.attended_count }}</td>
+        <td>
+          <a class="btn btn-quiet btn-small" href="{{ url_for('organizer.edit_event', event_id=e.id) }}">Edit</a>
+          <a class="btn btn-quiet btn-small" href="{{ url_for('organizer.attendance_csv', event_id=e.id) }}">CSV</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="empty" style="margin-top:20px">
+    <p>Nothing here yet. Create your first event and send it for approval.</p>
+    <a class="btn" href="{{ url_for('organizer.create_event') }}">Create event</a>
+  </div>
+{% endif %}
+{% endblock %}

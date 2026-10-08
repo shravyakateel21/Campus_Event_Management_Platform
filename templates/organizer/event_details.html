@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }} · Campus Events{% endblock %}
+{% block content %}
+<div class="split">
+  <div>
+    <span class="tag tag-{{ event.status }}">{{ event.status }}</span>
+    <h1>{{ event.title }}</h1>
+    <p class="lede">{{ event.start_datetime|dt }} · {{ event.venue }}</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a class="btn btn-quiet" href="{{ url_for('organizer.edit_event', event_id=event.id) }}">Edit</a>
+    <a class="btn btn-quiet" href="{{ url_for('organizer.event_feedback', event_id=event.id) }}">Feedback</a>
+    <a class="btn btn-outline" href="{{ url_for('organizer.attendance_csv', event_id=event.id) }}">Download report</a>
+  </div>
+</div>
+
+{% if event.review_note %}
+  <div class="notice notice-warn"><h3>Note from the administrator</h3><p>{{ event.review_note }}</p></div>
+{% endif %}
+
+<div class="grid grid-4" style="margin-top:16px">
+  <div class="stat"><b>{{ summary.registered }}</b><span>Registered</span></div>
+  <div class="stat"><b>{{ summary.present }}</b><span>Present</span></div>
+  <div class="stat"><b>{{ summary.absent }}</b><span>Absent</span></div>
+  <div class="stat"><b>{{ summary.feedback }}</b><span>Feedback received</span></div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h3>Attendance network</h3>
+  <div class="net-line"><span>Wi-Fi name</span><b>{{ event.wifi_ssid or 'not set' }}</b></div>
+  <div class="net-line"><span>Permitted range</span><b>{{ event.wifi_cidr or 'not set' }}</b></div>
+  <div class="net-line"><span>Gateway fallback</span><b>{{ event.wifi_public_ip or 'not set' }}</b></div>
+</div>
+
+<h2>Participants</h2>
+{% if participants %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Student</th><th>USN</th><th>Registered</th><th>Attendance</th><th>Rating</th><th></th></tr></thead>
+    <tbody>
+      {% for p in participants %}
+      <tr>
+        <td>{{ p.name }}<div class="meta">{{ p.email }}</div></td>
+        <td>{{ p.usn or '-' }}</td>
+        <td>{{ p.registered_at|dt('%d %b, %I:%M %p') }}</td>
+        <td>
+          {% if p.marked_at %}
+            <span class="tag tag-approved">Present</span>
+            <div class="meta">{{ p.marked_at|dt('%d %b, %I:%M %p') }} · {{ p.method }} · {{ p.ip_address }}</div>
+          {% else %}
+            <span class="tag">Not marked</span>
+          {% endif %}
+        </td>
+        <td class="num">{{ p.rating or '-' }}</td>
+        <td>
+          {% if not p.marked_at and event.start_datetime <= now %}
+            <form method="post" action="{{ url_for('organizer.mark_attendance_manually', event_id=event.id, student_id=p.id) }}">
+              <button class="btn btn-quiet btn-small" type="submit">Mark present</button>
+            </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="empty"><p>No registrations yet. Students see the event once the administrator approves it.</p></div>
+{% endif %}
+
+{% if event.status != 'cancelled' %}
+<form method="post" action="{{ url_for('organizer.cancel_event', event_id=event.id) }}" style="margin-top:20px"
+      onsubmit="return confirm('Cancel this event? Students will no longer see it.')">
+  <button class="btn btn-danger btn-small" type="submit">Cancel event</button>
+</form>
+{% endif %}
+{% endblock %}

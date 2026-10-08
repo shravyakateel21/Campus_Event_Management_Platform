@@ -90,5 +90,4 @@ def register():
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
     session.clear()
-    flash("Logged out.", "success")
     return redirect(url_for("index"))

@@ -6,6 +6,8 @@ from flask import flash, g, redirect, request, session, url_for
 
 import db
 
+import re
+
 ROLES = ("student", "organizer", "admin")
 
 HOME_FOR_ROLE = {
@@ -63,3 +65,27 @@ def role_required(*allowed_roles):
         return wrapped
 
     return decorator
+
+# ---------- password rules ----------
+PASSWORD_HINT = "At least 8 characters, with a capital letter, a digit and a special character (e.g. @ # $ %)."
+PASSWORD_PATTERN = r"(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s]).{8,}"
+
+
+def password_problems(password):
+    """Return what is missing from a password; an empty list means it is strong enough."""
+    missing = []
+    if len(password) < 8:
+        missing.append("at least 8 characters")
+    if not re.search(r"[A-Z]", password):
+        missing.append("a capital letter")
+    if not re.search(r"[0-9]", password):
+        missing.append("a digit")
+    if not re.search(r"[^A-Za-z0-9\s]", password):
+        missing.append("a special character")
+    return missing
+
+
+def password_error(password):
+    """One ready-to-flash sentence, or None when the password is fine."""
+    missing = password_problems(password)
+    return ("Password needs " + ", ".join(missing) + ".") if missing else None

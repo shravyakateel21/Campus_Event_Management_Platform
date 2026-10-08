@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit event' if event else 'Create event' }} · Campus Events{% endblock %}
+{% block content %}
+<h1>{{ 'Edit event' if event else 'Create event' }}</h1>
+<p class="lede">The administrator approves the event before students can see it. Editing an approved event sends it for approval again.</p>
+
+<form class="form" method="post">
+  <fieldset>
+    <legend>About the event</legend>
+    <div class="field">
+      <label for="title">Title</label>
+      <input type="text" id="title" name="title" value="{{ form.title }}" required>
+    </div>
+    <div class="field">
+      <label for="description">Description</label>
+      <textarea id="description" name="description">{{ form.description }}</textarea>
+    </div>
+    <div class="row-2">
+      <div class="field">
+        <label for="category">Category</label>
+        <input type="text" id="category" name="category" value="{{ form.category }}" placeholder="Workshop, Seminar, Technical, Cultural">
+      </div>
+      <div class="field">
+        <label for="venue">Venue</label>
+        <input type="text" id="venue" name="venue" value="{{ form.venue }}" required>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Schedule and seats</legend>
+    <div class="row-2">
+      <div class="field">
+        <label for="start_datetime">Starts</label>
+        <input type="datetime-local" id="start_datetime" name="start_datetime" value="{{ form.start_datetime }}" required>
+      </div>
+      <div class="field">
+        <label for="end_datetime">Ends</label>
+        <input type="datetime-local" id="end_datetime" name="end_datetime" value="{{ form.end_datetime }}" required>
+      </div>
+    </div>
+    <div class="row-2">
+      <div class="field">
+        <label for="registration_deadline">Registration closes</label>
+        <input type="datetime-local" id="registration_deadline" name="registration_deadline" value="{{ form.registration_deadline }}" required>
+      </div>
+      <div class="field">
+        <label for="capacity">Seats</label>
+        <input type="number" id="capacity" name="capacity" min="1" value="{{ form.capacity }}" required>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Wi-Fi attendance</legend>
+    <p class="hint" style="margin:0">A student can mark attendance only from an address inside the range you set here, so the device has to be on the venue network. Ask the network admin for the range of the access point covering the venue.</p>
+    <div class="field">
+      <label for="wifi_ssid">Wi-Fi name shown to students</label>
+      <input type="text" id="wifi_ssid" name="wifi_ssid" value="{{ form.wifi_ssid }}" placeholder="Campus-WiFi">
+    </div>
+    <div class="field">
+      <label for="wifi_cidr">Permitted network range</label>
+      <input type="text" id="wifi_cidr" name="wifi_cidr" value="{{ form.wifi_cidr }}" placeholder="10.10.4.0/22, 192.168.20.0/24">
+      <span class="hint">One or more ranges in CIDR form, separated by commas.</span>
+    </div>
+    <div class="field">
+      <label for="wifi_public_ip">Campus gateway IP (fallback)</label>
+      <input type="text" id="wifi_public_ip" name="wifi_public_ip" value="{{ form.wifi_public_ip }}" placeholder="103.21.58.14">
+      <span class="hint">Use only if the college routes all Wi-Fi traffic through one public address. It proves the student is on campus, not in the room.</span>
+    </div>
+  </fieldset>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn" type="submit">{{ 'Save changes' if event else 'Save and send for approval' }}</button>
+    <a class="btn btn-quiet" href="{{ url_for('organizer.dashboard') }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

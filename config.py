@@ -43,7 +43,7 @@ class Config:
     TRUSTED_PROXY_COUNT = _int("TRUSTED_PROXY_COUNT", 0)
 
     # Certificates
-    COLLEGE_NAME = os.getenv("COLLEGE_NAME", "A J Institute of Engineering College")
+    COLLEGE_NAME = os.getenv("COLLEGE_NAME", "A J Institute of Engineering & Technology")
     CERTIFICATE_SIGNATORY = os.getenv("CERTIFICATE_SIGNATORY", "Head of Department")
 
     # Created automatically on first run if no admin account exists yet.

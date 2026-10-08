@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Feedback · {{ event.title }}{% endblock %}
+{% block content %}
+<h1>Feedback for {{ event.title }}</h1>
+<p class="lede">{{ total }} response{{ '' if total == 1 else 's' }}{% if average %}, average rating {{ average }} out of 5{% endif %}.</p>
+
+{% if total %}
+<div class="card">
+  {% for star, count in spread.items() %}
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      <span style="width:52px">{{ star }} star</span>
+      <div class="bar" style="flex:1"><i style="width:{{ (count * 100 / total)|round(0, 'floor') }}%"></i></div>
+      <span class="num" style="width:28px;text-align:right">{{ count }}</span>
+    </div>
+  {% endfor %}
+</div>
+
+<div class="table-wrap" style="margin-top:16px">
+  <table>
+    <thead><tr><th>Student</th><th class="num">Rating</th><th>Comments</th><th>Submitted</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.name }}<div class="meta">{{ r.usn or '' }}</div></td>
+        <td class="num">{{ r.rating }}</td>
+        <td>{{ r.comments or '-' }}</td>
+        <td>{{ r.submitted_at|dt('%d %b, %I:%M %p') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="empty"><p>No feedback yet. Students can respond once the event has ended and their attendance is recorded.</p></div>
+{% endif %}
+
+<p style="margin-top:18px"><a href="{{ url_for('organizer.event_detail', event_id=event.id) }}">Back to event</a></p>
+{% endblock %}
