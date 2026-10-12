@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS attendance;
 DROP TABLE IF EXISTS registrations;
 DROP TABLE IF EXISTS events;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS password_resets;
 
 -- Students, organizers and administrators share one table and are separated
 -- by role, so that login and access control are handled in one place.
@@ -107,4 +108,14 @@ CREATE TABLE certificates (
   CONSTRAINT fk_cert_event   FOREIGN KEY (event_id)   REFERENCES events(id) ON DELETE CASCADE,
   CONSTRAINT fk_cert_student FOREIGN KEY (student_id) REFERENCES users(id)  ON DELETE CASCADE,
   UNIQUE KEY uq_certificate (event_id, student_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE password_resets (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  user_id     INT NOT NULL,
+  token_hash  CHAR(64) NOT NULL UNIQUE,
+  expires_at  DATETIME NOT NULL,
+  used_at     DATETIME DEFAULT NULL,
+  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_reset_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

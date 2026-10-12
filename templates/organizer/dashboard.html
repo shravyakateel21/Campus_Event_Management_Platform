@@ -17,9 +17,17 @@
 </div>
 
 {% if events %}
+{# Actions column is shown only if at least one event is not rejected #}
+{% set show_actions = events|rejectattr('status', 'equalto', 'rejected')|list|length > 0 %}
 <div class="table-wrap" style="margin-top:20px">
   <table>
-    <thead><tr><th>Event</th><th>When</th><th>Status</th><th class="num">Registered</th><th class="num">Present</th><th>Actions</th></tr></thead>
+    <thead>
+      <tr>
+        <th>Event</th><th>When</th><th>Status</th>
+        <th class="num">Registered</th><th class="num">Present</th>
+        {% if show_actions %}<th>Actions</th>{% endif %}
+      </tr>
+    </thead>
     <tbody>
       {% for e in events %}
       <tr>
@@ -30,10 +38,16 @@
           {% if e.review_note %}<div class="meta">{{ e.review_note }}</div>{% endif %}</td>
         <td class="num">{{ e.registered_count }} / {{ e.capacity }}</td>
         <td class="num">{{ e.attended_count }}</td>
+        {% if show_actions %}
         <td>
-          <a class="btn btn-quiet btn-small" href="{{ url_for('organizer.edit_event', event_id=e.id) }}">Edit</a>
-          <a class="btn btn-quiet btn-small" href="{{ url_for('organizer.attendance_csv', event_id=e.id) }}">CSV</a>
+          {% if e.status != 'rejected' %}
+            {% if e.status == 'pending' %}
+              <a class="btn btn-quiet btn-small" href="{{ url_for('organizer.edit_event', event_id=e.id) }}">Edit</a>
+            {% endif %}
+            <a class="btn btn-quiet btn-small" href="{{ url_for('organizer.attendance_csv', event_id=e.id) }}">CSV</a>
+          {% endif %}
         </td>
+        {% endif %}
       </tr>
       {% endfor %}
     </tbody>

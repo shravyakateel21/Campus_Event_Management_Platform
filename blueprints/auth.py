@@ -13,7 +13,6 @@ auth_bp = Blueprint("auth", __name__)
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
-
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if g.user:
@@ -61,8 +60,9 @@ def register():
             errors.append("Enter your full name.")
         if not EMAIL_RE.match(form["email"]):
             errors.append("Enter a valid email address.")
-        if len(password) < 6:
-            errors.append("Use a password of at least 6 characters.")
+        problem = security.password_error(password)
+        if problem:
+            errors.append(problem)
         if password != confirm:
             errors.append("The two passwords do not match.")
         if db.query_one("SELECT id FROM users WHERE email = %s", (form["email"],)):
@@ -91,3 +91,35 @@ def register():
 def logout():
     session.clear()
     return redirect(url_for("index"))
+
+# ---------------------------------------------------------------- forgot password
+@auth_bp.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if g.user:
+        return redirect(url_for(security.HOME_FOR_ROLE[g.user["role"]]))
+
+    email = ""
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        confirm = request.form.get("confirm_password", "")
+
+        user = db.query_one(
+            "SELECT id, role, is_active FROM users WHERE email = %s", (email,))
+
+        problem = security.password_error(password)
+        if user is None or not user["is_active"]:
+            flash("No active account was found with that email.", "error")
+        elif user["role"] == "admin":
+            flash("Administrator passwords cannot be reset here. Contact the system owner.", "error")
+        elif problem:
+            flash(problem, "error")
+        elif password != confirm:
+            flash("The two passwords do not match.", "error")
+        else:
+            db.execute("UPDATE users SET password_hash = %s WHERE id = %s",
+                       (generate_password_hash(password), user["id"]))
+            flash("Password changed. Log in with your new password.", "success")
+            return redirect(url_for("auth.login"))
+
+    return render_template("forgot_password.html", email=email)

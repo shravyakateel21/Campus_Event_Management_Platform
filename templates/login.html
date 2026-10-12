@@ -13,6 +13,7 @@
       <div class="field">
         <label for="password">Password</label>
         <input type="password" id="password" name="password" required>
+        <span class="hint"><a href="{{ url_for('auth.forgot_password') }}">Forgot password?</a></span>
       </div>
       <button class="btn" type="submit">Log in</button>
     </form>

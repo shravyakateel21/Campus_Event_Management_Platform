@@ -151,6 +151,10 @@ def create_event():
 def edit_event(event_id):
     event = _owned_event(event_id)
 
+    # Organizers can only edit events that are still waiting for approval.
+    if g.user["role"] != "admin" and event["status"] != "pending":
+        flash("This event can no longer be edited.", "error")
+        return redirect(url_for("organizer.dashboard"))
     if request.method == "POST":
         form, errors, values = _read_event_form()
         if errors:

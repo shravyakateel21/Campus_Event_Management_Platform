@@ -7,12 +7,12 @@ from flask import (Blueprint, flash, g, redirect, render_template, request,
 from werkzeug.security import generate_password_hash
 
 import db
-from security import ROLES, role_required
+from blueprints.organizer import _read_event_form
+from security import ROLES, password_error, role_required
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-
 
 @admin_bp.route("/")
 @role_required("admin")
@@ -55,6 +55,47 @@ def events():
     return render_template("admin/events.html", events=db.query_all(sql, params),
                            status=status)
 
+EVENT_FIELDS = ("title", "description", "category", "venue", "start_datetime", "end_datetime",
+                "registration_deadline", "capacity", "wifi_ssid", "wifi_cidr", "wifi_public_ip")
+
+
+@admin_bp.route("/events/new", methods=["GET", "POST"])
+@role_required("admin")
+def create_event():
+    """The admin can add an event directly. It is approved straight away."""
+    organizers = db.query_all(
+        "SELECT id, name FROM users WHERE role = 'organizer' AND is_active = 1 ORDER BY name")
+    valid_owner_ids = {g.user["id"]} | {o["id"] for o in organizers}
+
+    form = {k: "" for k in EVENT_FIELDS}
+    form["capacity"] = "100"
+    form["organizer_id"] = str(g.user["id"])
+
+    if request.method == "POST":
+        form, errors, values = _read_event_form()
+        form["organizer_id"] = request.form.get("organizer_id", str(g.user["id"]))
+        try:
+            owner_id = int(form["organizer_id"])
+        except ValueError:
+            owner_id = None
+        if owner_id not in valid_owner_ids:
+            errors.append("Choose who is organizing this event.")
+
+        if errors:
+            for message in errors:
+                flash(message, "error")
+            return render_template("admin/event_form.html", form=form, organizers=organizers)
+
+        db.execute(
+            "INSERT INTO events (title, description, category, venue, start_datetime,"
+            " end_datetime, registration_deadline, capacity, wifi_ssid, wifi_cidr,"
+            " wifi_public_ip, organizer_id, status)"
+            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'approved')",
+            values + (owner_id,))
+        flash(f"'{form['title']}' has been added and is visible to students.", "success")
+        return redirect(url_for("admin.events"))
+
+    return render_template("admin/event_form.html", form=form, organizers=organizers)
 
 @admin_bp.route("/events/<int:event_id>/review", methods=["POST"])
 @role_required("admin")
@@ -112,8 +153,9 @@ def create_user():
             errors.append("Enter a valid email address.")
         if form["role"] not in ROLES:
             errors.append("Choose a role.")
-        if len(password) < 6:
-            errors.append("Set a password of at least 6 characters.")
+        problem = password_error(password)
+        if problem:
+            errors.append(problem)
         if db.query_one("SELECT id FROM users WHERE email = %s", (form["email"],)):
             errors.append("An account already exists with this email.")
 

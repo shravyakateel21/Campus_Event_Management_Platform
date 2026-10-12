@@ -2,8 +2,13 @@
 {% extends "base.html" %}
 {% block title %}Administration · Campus Events{% endblock %}
 {% block content %}
-<h1>Platform overview</h1>
-<p class="lede">Approve what organizers submit, keep accounts in order, and check how events are running.</p>
+<div class="split">
+  <div>
+    <h1>Platform overview</h1>
+    <p class="lede">Approve what organizers submit, add events yourself, keep accounts in order, and check how events are running.</p>
+  </div>
+  <a class="btn" href="{{ url_for('admin.create_event') }}">+ Add event</a>
+</div>
 
 <div class="grid grid-4">
   <div class="stat"><b>{{ stats.students }}</b><span>Students</span></div>

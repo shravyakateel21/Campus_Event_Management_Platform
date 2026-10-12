@@ -41,6 +41,20 @@ def _ensure_default_admin(app):
         print("DEFAULT_ADMIN_PASSWORD in .env before the first run.")
         print("=" * 60)
 
+def _ensure_password_reset_table(app):
+    """Create the table used by 'Forgot password' if it is not there yet."""
+    with app.app_context():
+        db.execute(
+            "CREATE TABLE IF NOT EXISTS password_resets ("
+            " id INT AUTO_INCREMENT PRIMARY KEY,"
+            " user_id INT NOT NULL,"
+            " token_hash CHAR(64) NOT NULL UNIQUE,"
+            " expires_at DATETIME NOT NULL,"
+            " used_at DATETIME DEFAULT NULL,"
+            " created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+            " CONSTRAINT fk_reset_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+            ") ENGINE=InnoDB")
+        
 def _home_data():
     """Live numbers and upcoming events for the public landing page."""
     try:
@@ -63,6 +77,10 @@ def create_app(config_object=Config):
 
     db.init_app(app)
     _ensure_default_admin(app)
+
+    db.init_app(app)
+    _ensure_default_admin(app)
+    _ensure_password_reset_table(app)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(student_bp)
@@ -87,8 +105,9 @@ def create_app(config_object=Config):
 
     @app.context_processor
     def inject_globals():
-        # Views that compare dates pass their own `now`; this is the fallback.
-        return {"now": datetime.now(), "college_name": app.config["COLLEGE_NAME"]}
+        return {"now": datetime.now(), "college_name": app.config["COLLEGE_NAME"],
+                "password_hint": security.PASSWORD_HINT,
+                "password_pattern": security.PASSWORD_PATTERN}
 
     @app.errorhandler(403)
     def forbidden(_):

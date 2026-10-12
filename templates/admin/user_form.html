@@ -35,7 +35,9 @@
     </div>
     <div class="field">
       <label for="password">Temporary password</label>
-      <input type="password" id="password" name="password" required>
+      <input type="password" id="password" name="password" required minlength="8"
+       pattern="{{ password_pattern }}" title="{{ password_hint }}">
+       <span class="hint">{{ password_hint }}</span>
     </div>
   </div>
   <div style="display:flex;gap:10px">

@@ -8,7 +8,9 @@
     <p class="lede">{{ event.start_datetime|dt }} · {{ event.venue }}</p>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <a class="btn btn-quiet" href="{{ url_for('organizer.edit_event', event_id=event.id) }}">Edit</a>
+    {% if event.status == 'pending' or g.user.role == 'admin' %}
+      <a class="btn btn-quiet" href="{{ url_for('organizer.edit_event', event_id=event.id) }}">Edit</a>
+    {% endif %}
     <a class="btn btn-quiet" href="{{ url_for('organizer.event_feedback', event_id=event.id) }}">Feedback</a>
     <a class="btn btn-outline" href="{{ url_for('organizer.attendance_csv', event_id=event.id) }}">Download report</a>
   </div>
