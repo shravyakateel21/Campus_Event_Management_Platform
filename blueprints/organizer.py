@@ -141,12 +141,12 @@ def create_event():
                 flash(message, "error")
             return render_template("organizer/event_form.html", form=form, event=None)
 
-            event_id = db.execute(
-            "INSERT INTO events (title, description, category, venue, start_datetime,"
-            " end_datetime, registration_deadline, capacity, wifi_ssid, wifi_cidr,"
-            " wifi_public_ip, department, organizer_id, status)"
-            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending')",
-            values + (g.user["id"],))
+        event_id = db.execute(
+                "INSERT INTO events (title, description, category, venue, start_datetime,"
+                " end_datetime, registration_deadline, capacity, wifi_ssid, wifi_cidr,"
+                " wifi_public_ip, department, organizer_id, status)"
+                " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending')",
+                values + (g.user["id"],))
         flash("Event saved and sent to the administrator for approval.", "success")
         return redirect(url_for("organizer.event_detail", event_id=event_id))
 

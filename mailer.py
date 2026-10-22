@@ -12,7 +12,7 @@ def send_email(to, subject, text):
 
     If MAIL_SERVER is empty (e-mail switched off) nothing is sent. While the app
     runs in debug mode the message is printed in the terminal instead, so the
-    reset code can still be tested on a laptop. Never leave debug on in production.
+    reset link can still be tested on a laptop. Never leave debug on in production.
     """
     cfg = current_app.config
     if not cfg["MAIL_SERVER"]:
@@ -45,5 +45,6 @@ def send_email(to, subject, text):
             server.send_message(msg)
         return True
     except Exception as exc:  # network, login or TLS problem
+        print("MAIL ERROR:", type(exc).__name__, exc)
         current_app.logger.error("Could not send e-mail to %s: %s", to, exc)
         return False

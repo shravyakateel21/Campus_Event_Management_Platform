@@ -7,7 +7,8 @@ same code runs on a laptop and on a college server without edits.
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, ".env"), override=True)
 
 
 def _int(name, default):
@@ -54,7 +55,7 @@ class Config:
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
     MAIL_FROM = os.getenv("MAIL_FROM", "") or os.getenv("MAIL_USERNAME", "") or "no-reply@college.edu"
     # Address students use to open the site; goes into the feedback link in the e-mail.
-    SITE_URL = os.getenv("SITE_URL", "http://localhost:5000")
+    SITE_URL = os.getenv("SITE_URL", "")
 
     # Created automatically on first run if no admin account exists yet.
     # Change the password after logging in, or set these in .env before first run.
@@ -63,6 +64,5 @@ class Config:
     DEFAULT_ADMIN_NAME = os.getenv("DEFAULT_ADMIN_NAME", "Admin")
 
     # Forgot password (6-digit code sent by e-mail)
-    RESET_OTP_MINUTES = _int("RESET_OTP_MINUTES", 10)        # how long a code stays valid
-    RESET_RESEND_SECONDS = _int("RESET_RESEND_SECONDS", 60)   # wait before another code is sent
-    RESET_MAX_ATTEMPTS = _int("RESET_MAX_ATTEMPTS", 5)        # wrong guesses before the code dies
+    RESET_LINK_MINUTES = _int("RESET_LINK_MINUTES", 30)       # how long a reset link stays valid
+    RESET_RESEND_SECONDS = _int("RESET_RESEND_SECONDS", 60)   # wait before another link is sent
