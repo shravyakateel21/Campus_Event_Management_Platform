@@ -9,10 +9,12 @@ from flask import Flask, g, redirect, render_template, url_for
 from werkzeug.security import generate_password_hash
 
 import db
+import departments
 import security
 from blueprints.admin import admin_bp
 from blueprints.auth import auth_bp
 from blueprints.organizer import organizer_bp
+from blueprints.public import public_bp
 from blueprints.student import student_bp
 from config import Config
 
@@ -51,15 +53,22 @@ def _ensure_password_reset_table(app):
             " token_hash CHAR(64) NOT NULL UNIQUE,"
             " expires_at DATETIME NOT NULL,"
             " used_at DATETIME DEFAULT NULL,"
+            " attempts TINYINT NOT NULL DEFAULT 0,"
             " created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
             " CONSTRAINT fk_reset_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
             ") ENGINE=InnoDB")
+        # Tables made by an older version of this project lack the attempts column.
+        has_attempts = db.scalar(
+            "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() "
+            "AND table_name = 'password_resets' AND column_name = 'attempts'")
+        if not has_attempts:
+            db.execute("ALTER TABLE password_resets ADD COLUMN attempts TINYINT NOT NULL DEFAULT 0")
         
 def _home_data():
     """Live numbers and upcoming events for the public landing page."""
     try:
         upcoming = db.query_all(
-            "SELECT title, category, venue, start_datetime FROM events "
+            "SELECT id, title, category, venue, start_datetime FROM events "
             "WHERE status = 'approved' AND end_datetime >= NOW() "
             "ORDER BY start_datetime LIMIT 4")
         stats = {
@@ -77,14 +86,12 @@ def create_app(config_object=Config):
 
     db.init_app(app)
     _ensure_default_admin(app)
-
-    db.init_app(app)
-    _ensure_default_admin(app)
     _ensure_password_reset_table(app)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(student_bp)
     app.register_blueprint(organizer_bp)
+    app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp)
 
     @app.before_request
@@ -106,6 +113,7 @@ def create_app(config_object=Config):
     @app.context_processor
     def inject_globals():
         return {"now": datetime.now(), "college_name": app.config["COLLEGE_NAME"],
+                "departments": departments.DEPARTMENTS,
                 "password_hint": security.PASSWORD_HINT,
                 "password_pattern": security.PASSWORD_PATTERN}
 

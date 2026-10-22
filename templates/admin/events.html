@@ -40,8 +40,12 @@
             {% if e.status == 'pending' %}
               <button class="btn btn-danger btn-small" name="decision" value="rejected" type="submit">Reject</button>
             {% elif e.status == 'approved' %}
-              <button class="btn btn-danger btn-small" name="decision" value="cancelled" type="submit">Cancel</button>
-            {% endif %}
+  {% if e.end_datetime < now %}
+    <button class="btn btn-danger btn-small" type="button" disabled title="This event is over and can no longer be cancelled">Cancel</button>
+  {% else %}
+    <button class="btn btn-danger btn-small" name="decision" value="cancelled" type="submit">Cancel</button>
+  {% endif %}
+{% endif %}
           </form>
         </td>
       </tr>

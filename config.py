@@ -46,18 +46,23 @@ class Config:
     COLLEGE_NAME = os.getenv("COLLEGE_NAME", "A J Institute of Engineering & Technology")
     CERTIFICATE_SIGNATORY = os.getenv("CERTIFICATE_SIGNATORY", "Head of Department")
 
-        # Password-reset e-mail. Leave MAIL_SERVER empty while developing: the reset
-    # link is then printed in the terminal instead of being e-mailed.
+        # E-mail for certificates. Leave MAIL_SERVER empty to switch e-mailing off.
     MAIL_SERVER = os.getenv("MAIL_SERVER", "")
     MAIL_PORT = _int("MAIL_PORT", 587)
     MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "1") == "1"
     MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
     MAIL_FROM = os.getenv("MAIL_FROM", "") or os.getenv("MAIL_USERNAME", "") or "no-reply@college.edu"
-    PASSWORD_RESET_MINUTES = _int("PASSWORD_RESET_MINUTES", 30)
+    # Address students use to open the site; goes into the feedback link in the e-mail.
+    SITE_URL = os.getenv("SITE_URL", "http://localhost:5000")
 
     # Created automatically on first run if no admin account exists yet.
     # Change the password after logging in, or set these in .env before first run.
     DEFAULT_ADMIN_EMAIL = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@college.edu")
     DEFAULT_ADMIN_PASSWORD = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
     DEFAULT_ADMIN_NAME = os.getenv("DEFAULT_ADMIN_NAME", "Admin")
+
+    # Forgot password (6-digit code sent by e-mail)
+    RESET_OTP_MINUTES = _int("RESET_OTP_MINUTES", 10)        # how long a code stays valid
+    RESET_RESEND_SECONDS = _int("RESET_RESEND_SECONDS", 60)   # wait before another code is sent
+    RESET_MAX_ATTEMPTS = _int("RESET_MAX_ATTEMPTS", 5)        # wrong guesses before the code dies

@@ -1,48 +1,44 @@
-{% extends "base.html" %}
-{% block title %}Create account · Campus Events{% endblock %}
-{% block content %}
-<div class="auth">
-  <div class="auth-card">
+{% extends "auth_layout.html" %}
+{% block title %}Create account{% endblock %}
+{% block side_title %}Join Campus Events{% endblock %}
+{% block event_note %}Create your account in a minute, then log in and confirm your seat on the event page.{% endblock %}
+{% block form %}
   <h1>Create your student account</h1>
-  <p class="lede">Organizer accounts are created by the administrator.</p>
-  <form class="form" method="post">
-    <div class="field">
+  <p class="sub">{% if event %}Create an account to register for {{ event.title }}.{% else %}Organizer accounts are created by the administrator.{% endif %}</p>
+
+  <form class="ax-form" method="post">
+    <div class="ax-field">
       <label for="name">Full name</label>
-      <input type="text" id="name" name="name" value="{{ form.name }}" required>
+      <input type="text" id="name" name="name" value="{{ form.name }}" required autofocus autocomplete="name">
     </div>
-    <div class="field">
+    <div class="ax-field">
       <label for="email">Email</label>
-      <input type="email" id="email" name="email" value="{{ form.email }}" required>
+      <input type="email" id="email" name="email" value="{{ form.email }}" required autocomplete="email">
     </div>
-    <div class="row-2">
-    <!--<div class="field">
-        <label for="usn">USN</label>
-        <input type="text" id="usn" name="usn" value="{{ form.usn }}" required>
-      </div>-->
-      <div class="field">
+    <div class="ax-row">
+      <div class="ax-field">
         <label for="department">Department</label>
         <input type="text" id="department" name="department" value="{{ form.department }}">
       </div>
+      <div class="ax-field">
+        <label for="phone">Phone (optional)</label>
+        <input type="text" id="phone" name="phone" value="{{ form.phone }}" autocomplete="tel">
+      </div>
     </div>
-    <div class="field">
-      <label for="phone">Phone (optional)</label>
-      <input type="text" id="phone" name="phone" value="{{ form.phone }}">
-    </div>
-    <div class="row-2">
-      <div class="field">
+    <div class="ax-row">
+      <div class="ax-field">
         <label for="password">Password</label>
         <input type="password" id="password" name="password" required minlength="8"
-       pattern="{{ password_pattern }}" title="{{ password_hint }}">
-       <span class="hint">{{ password_hint }}</span>
+               pattern="{{ password_pattern }}" title="{{ password_hint }}" autocomplete="new-password">
       </div>
-      <div class="field">
+      <div class="ax-field">
         <label for="confirm_password">Repeat password</label>
-        <input type="password" id="confirm_password" name="confirm_password" required>
+        <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password">
       </div>
     </div>
-    <button class="btn" type="submit">Create account</button>
+    <p class="ax-hint">{{ password_hint }}</p>
+    <button class="btn green" type="submit">Create account</button>
   </form>
-  <p class="auth-foot">Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a></p>
-  </div>
-</div>
+
+  <p class="ax-alt">Already have an account? <a href="{{ url_for('auth.login', next=next_url) }}">Log in</a></p>
 {% endblock %}

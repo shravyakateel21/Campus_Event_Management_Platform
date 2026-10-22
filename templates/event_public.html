@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ event.title }} · {{ college_name }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="hp">
+{% set student_page = url_for('student.event_detail', event_id=event.id) %}
+
+<div class="topbar"><div class="wrap">
+  <span>{{ college_name }} &nbsp;|&nbsp; Official campus event platform</span>
+  <nav>
+    {% if g.user %}
+      <a href="{{ url_for('index') }}">My dashboard</a>
+    {% else %}
+      <a href="{{ url_for('auth.login', next=student_page) }}">Log in</a>
+      <a class="pill" href="{{ url_for('auth.register', next=student_page) }}">Student sign up</a>
+    {% endif %}
+  </nav>
+</div></div>
+
+<header class="site"><div class="wrap">
+  <a class="brand" href="{{ url_for('index') }}">
+    <span class="crest">AJ</span><span><b>Campus Events</b><small>{{ college_name }}</small></span>
+  </a>
+  <nav class="evnav">
+    <a href="{{ url_for('index') }}">Home</a>
+    <a href="{{ url_for('index') }}#upcoming">Upcoming events</a>
+  </nav>
+</div></header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="wrap" style="padding-top:14px">
+    {% for category, message in messages %}
+      <p class="flash flash-{{ category }}">{{ message }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<main class="evd"><div class="wrap">
+  <a class="back" href="{{ url_for('index') }}#upcoming">&larr; All upcoming events</a>
+
+  <div class="evd-grid">
+    <article class="evd-main">
+      <span class="cat">{{ event.category }}</span>
+      <h1>{{ event.title }}</h1>
+      <p class="by">Organized by {{ event.organizer_name }}</p>
+
+      <ul class="facts">
+        <li><span>Starts</span><b>{{ event.start_datetime|dt }}</b></li>
+        <li><span>Ends</span><b>{{ event.end_datetime|dt }}</b></li>
+        <li><span>Venue</span><b>{{ event.venue }}</b></li>
+        <li><span>Registration closes</span><b>{{ event.registration_deadline|dt }}</b></li>
+        <li><span>Seats</span><b>{{ seats_left }} of {{ event.capacity }} left</b></li>
+      </ul>
+
+      {% if registration_open and not g.user %}
+      <a class="btn green block evd-mobile-cta" href="{{ url_for('auth.login', next=student_page) }}">Register now</a>
+      {% endif %}
+
+      {% if event.description %}
+      <h2 class="t">About this event</h2>
+      <p class="desc">{{ event.description }}</p>
+      {% endif %}
+
+      <h2 class="t">On the day</h2>
+      <p class="desc">Registered students mark their attendance from a phone connected to the venue
+        Wi-Fi. After the event you can leave feedback and download your certificate.</p>
+    </article>
+
+    <aside class="evd-side">
+      <div class="date"><b>{{ event.start_datetime.strftime('%d') }}</b><small>{{ event.start_datetime.strftime('%b %Y') }} · {{ event.start_datetime.strftime('%I:%M %p') }}</small></div>
+      <div class="cta">
+        {% if registration_open and not g.user %}
+          <p>Interested? Register with your student account.</p>
+          <a class="btn green block" href="{{ url_for('auth.login', next=student_page) }}">Register now</a>
+          <small>You will be asked to log in first.
+            New here? <a href="{{ url_for('auth.register', next=student_page) }}">Create a student account</a>.</small>
+        {% elif registration_open %}
+          <p>You are logged in as {{ g.user.role }}. Only student accounts can register for events.</p>
+          <a class="btn green block" href="{{ url_for('index') }}">Go to my dashboard</a>
+        {% else %}
+          <p class="closed">{{ closed_reason }}</p>
+          <button class="btn green block" type="button" disabled>Registration closed</button>
+          <small><a href="{{ url_for('index') }}#upcoming">See other upcoming events</a></small>
+        {% endif %}
+      </div>
+    </aside>
+  </div>
+</div></main>
+
+<footer><div class="wrap">
+  <div class="fcols">
+    <div><div class="brand"><span class="crest">AJ</span><span><b style="color:#fff">Campus Events</b><small>{{ college_name }}</small></span></div>
+      <p style="margin-top:12px">Event registration, attendance and certificates for the whole campus.</p></div>
+    <div><h4>Quick links</h4><ul><li><a href="{{ url_for('index') }}">Home</a></li><li><a href="{{ url_for('index') }}#upcoming">Upcoming events</a></li><li><a href="{{ url_for('index') }}#how">How it works</a></li></ul></div>
+    <div><h4>Account</h4><ul><li><a href="{{ url_for('auth.login') }}">Log in</a></li><li><a href="{{ url_for('auth.register') }}">Student sign up</a></li></ul></div>
+    <div><h4>Note</h4><p>Attendance is verified on the venue Wi-Fi.</p></div>
+  </div>
+  <div class="copy-bar">© {{ now.year }} {{ college_name }}. All rights reserved.</div>
+</div></footer>
+
+</body>
+</html>

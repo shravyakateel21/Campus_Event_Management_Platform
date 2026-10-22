@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Welcome{% endblock %} · {{ college_name }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="hp ax">
+
+<header class="site"><div class="wrap">
+  <a class="brand" href="{{ url_for('index') }}">
+    <span class="crest">AJ</span><span><b>Campus Events</b><small>{{ college_name }}</small></span>
+  </a>
+  <a class="ax-home" href="{{ url_for('index') }}">&larr; Back to home</a>
+</div></header>
+
+<main class="ax-wrap">
+  <div class="ax-box">
+
+    <aside class="ax-side">
+      <span class="crest">AJ</span>
+      {% if event %}
+        <div>
+          <p class="eyebrow">You are registering for</p>
+          <div class="ax-event">
+            <div class="d"><b>{{ event.start_datetime.strftime('%d') }}</b><small>{{ event.start_datetime.strftime('%b') }}</small></div>
+            <div>
+              <h3>{{ event.title }}</h3>
+              <p>{{ event.start_datetime|dt('%I:%M %p') }} &middot; {{ event.venue }}</p>
+            </div>
+          </div>
+        </div>
+        <p>{% block event_note %}One quick step: log in with your student account, then confirm your seat on the event page.{% endblock %}</p>
+      {% else %}
+        <h2>{% block side_title %}Campus Events{% endblock %}</h2>
+        <ul class="ax-perks">
+          <li>Register for campus events in a few taps</li>
+          <li>Mark attendance from the venue Wi-Fi</li>
+          <li>Give feedback and download your certificates</li>
+        </ul>
+      {% endif %}
+      <p class="ax-college">{{ college_name }}</p>
+    </aside>
+
+    <section class="ax-main">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <p class="ax-flash flash-{{ category }}">{{ message }}</p>
+        {% endfor %}
+      {% endwith %}
+      {% block form %}{% endblock %}
+    </section>
+
+  </div>
+</main>
+
+</body>
+</html>

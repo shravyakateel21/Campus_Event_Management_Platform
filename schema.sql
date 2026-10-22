@@ -37,6 +37,7 @@ CREATE TABLE events (
   title                 VARCHAR(160) NOT NULL,
   description           TEXT,
   category              VARCHAR(60)  NOT NULL DEFAULT 'General',
+  department            VARCHAR(20)  DEFAULT NULL,
   venue                 VARCHAR(160) NOT NULL,
   start_datetime        DATETIME     NOT NULL,
   end_datetime          DATETIME     NOT NULL,
@@ -116,6 +117,7 @@ CREATE TABLE password_resets (
   token_hash  CHAR(64) NOT NULL UNIQUE,
   expires_at  DATETIME NOT NULL,
   used_at     DATETIME DEFAULT NULL,
+  attempts    TINYINT NOT NULL DEFAULT 0,
   created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_reset_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

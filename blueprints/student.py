@@ -14,7 +14,7 @@ from security import role_required
 student_bp = Blueprint("student", __name__, url_prefix="/student")
 
 EVENT_WITH_COUNTS = """
-    SELECT e.*, u.name AS organizer_name,
+    SELECT e.*, u.name AS organizer_name, u.department AS organizer_department,
            (SELECT COUNT(*) FROM registrations r
              WHERE r.event_id = e.id AND r.status = 'registered') AS registered_count
     FROM events e
@@ -263,6 +263,10 @@ def feedback(event_id):
         return redirect(url_for("student.event_detail", event_id=event_id))
     if not event["my_attendance"]:
         flash("Feedback is open to students whose attendance was recorded.", "error")
+        return redirect(url_for("student.event_detail", event_id=event_id))
+
+    if event["my_feedback"]:
+        flash("Your feedback has already been submitted and can't be edited.", "error")
         return redirect(url_for("student.event_detail", event_id=event_id))
 
     if request.method == "POST":

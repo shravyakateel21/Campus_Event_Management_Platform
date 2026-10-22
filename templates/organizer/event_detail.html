@@ -71,9 +71,15 @@
 {% endif %}
 
 {% if event.status != 'cancelled' %}
-<form method="post" action="{{ url_for('organizer.cancel_event', event_id=event.id) }}" style="margin-top:20px"
-      onsubmit="return confirm('Cancel this event? Students will no longer see it.')">
-  <button class="btn btn-danger btn-small" type="submit">Cancel event</button>
-</form>
+  {% if event.end_datetime < now %}
+    <div style="margin-top:20px">
+      <button class="btn btn-danger btn-small" type="button" disabled title="This event is over and can no longer be cancelled">Cancel event</button>
+    </div>
+  {% else %}
+    <form method="post" action="{{ url_for('organizer.cancel_event', event_id=event.id) }}" style="margin-top:20px"
+          onsubmit="return confirm('Cancel this event? Students will no longer see it.')">
+      <button class="btn btn-danger btn-small" type="submit">Cancel event</button>
+    </form>
+  {% endif %}
 {% endif %}
 {% endblock %}

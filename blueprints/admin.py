@@ -1,12 +1,14 @@
 """Administrator module: approve events, manage users, view platform reports."""
 
 import re
+from datetime import datetime
 
 from flask import (Blueprint, flash, g, redirect, render_template, request,
                    url_for)
 from werkzeug.security import generate_password_hash
 
 import db
+import departments
 from blueprints.organizer import _read_event_form
 from security import ROLES, password_error, role_required
 
@@ -56,7 +58,7 @@ def events():
                            status=status)
 
 EVENT_FIELDS = ("title", "description", "category", "venue", "start_datetime", "end_datetime",
-                "registration_deadline", "capacity", "wifi_ssid", "wifi_cidr", "wifi_public_ip")
+                "registration_deadline", "capacity", "wifi_ssid", "wifi_cidr", "wifi_public_ip","department")
 
 
 @admin_bp.route("/events/new", methods=["GET", "POST"])
@@ -70,6 +72,7 @@ def create_event():
     form = {k: "" for k in EVENT_FIELDS}
     form["capacity"] = "100"
     form["organizer_id"] = str(g.user["id"])
+    form["department"] = departments.DEFAULT_DEPARTMENT
 
     if request.method == "POST":
         form, errors, values = _read_event_form()
@@ -86,11 +89,11 @@ def create_event():
                 flash(message, "error")
             return render_template("admin/event_form.html", form=form, organizers=organizers)
 
-        db.execute(
+            db.execute(
             "INSERT INTO events (title, description, category, venue, start_datetime,"
             " end_datetime, registration_deadline, capacity, wifi_ssid, wifi_cidr,"
-            " wifi_public_ip, organizer_id, status)"
-            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'approved')",
+            " wifi_public_ip, department, organizer_id, status)"
+            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'approved')",
             values + (owner_id,))
         flash(f"'{form['title']}' has been added and is visible to students.", "success")
         return redirect(url_for("admin.events"))
@@ -106,10 +109,13 @@ def review_event(event_id):
         flash("Choose approve or reject.", "error")
         return redirect(url_for("admin.events"))
 
-    event = db.query_one("SELECT title FROM events WHERE id = %s", (event_id,))
+    event = db.query_one("SELECT title, end_datetime FROM events WHERE id = %s", (event_id,))
     if event is None:
         flash("That event no longer exists.", "error")
         return redirect(url_for("admin.events"))
+    if decision == "cancelled" and event["end_datetime"] < datetime.now():
+        flash("This event is over and can no longer be cancelled.", "error")
+        return redirect(request.referrer or url_for("admin.events"))
 
     db.execute("UPDATE events SET status = %s, review_note = %s WHERE id = %s",
                (decision, note, event_id))

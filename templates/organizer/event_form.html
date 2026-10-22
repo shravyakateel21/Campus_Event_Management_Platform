@@ -25,6 +25,15 @@
         <input type="text" id="venue" name="venue" value="{{ form.venue }}" required>
       </div>
     </div>
+    <div class="field">
+  <label for="department">Organizing department</label>
+  <select id="department" name="department" required>
+    {% for code, d in departments.items() %}
+      <option value="{{ code }}" {% if form.department == code %}selected{% endif %}>{{ d.name }}</option>
+    {% endfor %}
+  </select>
+  <span class="hint">The HOD of this department signs the participation certificates.</span>
+</div>
   </fieldset>
 
   <fieldset>

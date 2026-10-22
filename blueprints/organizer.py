@@ -9,8 +9,10 @@ from flask import (Blueprint, Response, abort, flash, g, redirect,
                    render_template, request, url_for)
 
 import db
+import departments  
 import wifi
 from security import role_required
+
 
 organizer_bp = Blueprint("organizer", __name__, url_prefix="/organizer")
 
@@ -50,6 +52,7 @@ def _read_event_form():
         "wifi_ssid": request.form.get("wifi_ssid", "").strip(),
         "wifi_cidr": request.form.get("wifi_cidr", "").strip(),
         "wifi_public_ip": request.form.get("wifi_public_ip", "").strip(),
+        "department": request.form.get("department", "").strip().upper(),
     }
     errors = []
 
@@ -95,6 +98,9 @@ def _read_event_form():
                   form["wifi_public_ip"] or None)
     return form, errors, values
 
+    if form["department"] not in departments.DEPARTMENTS:
+        errors.append("Choose the department organizing this event.")
+
 
 @organizer_bp.route("/")
 @role_required("organizer", "admin")
@@ -124,8 +130,9 @@ def dashboard():
 def create_event():
     form = {k: "" for k in ("title", "description", "category", "venue", "start_datetime",
                             "end_datetime", "registration_deadline", "capacity",
-                            "wifi_ssid", "wifi_cidr", "wifi_public_ip")}
+                            "wifi_ssid", "wifi_cidr", "wifi_public_ip", "department")}
     form["capacity"] = "100"
+    form["department"], _ = departments.resolve(None, g.user.get("department"))
 
     if request.method == "POST":
         form, errors, values = _read_event_form()
@@ -134,11 +141,11 @@ def create_event():
                 flash(message, "error")
             return render_template("organizer/event_form.html", form=form, event=None)
 
-        event_id = db.execute(
+            event_id = db.execute(
             "INSERT INTO events (title, description, category, venue, start_datetime,"
             " end_datetime, registration_deadline, capacity, wifi_ssid, wifi_cidr,"
-            " wifi_public_ip, organizer_id, status)"
-            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending')",
+            " wifi_public_ip, department, organizer_id, status)"
+            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending')",
             values + (g.user["id"],))
         flash("Event saved and sent to the administrator for approval.", "success")
         return redirect(url_for("organizer.event_detail", event_id=event_id))
@@ -168,7 +175,7 @@ def edit_event(event_id):
         db.execute(
             "UPDATE events SET title=%s, description=%s, category=%s, venue=%s,"
             " start_datetime=%s, end_datetime=%s, registration_deadline=%s, capacity=%s,"
-            " wifi_ssid=%s, wifi_cidr=%s, wifi_public_ip=%s, status=%s, review_note=NULL"
+            " wifi_ssid=%s, wifi_cidr=%s, wifi_public_ip=%s, department=%s, status=%s, review_note=NULL"
             " WHERE id=%s", values + (new_status, event_id))
         flash("Event updated." + (" It needs approval again." if new_status == "pending" else ""),
               "success")
@@ -183,6 +190,8 @@ def edit_event(event_id):
         "capacity": str(event["capacity"]),
         "wifi_ssid": event["wifi_ssid"] or "", "wifi_cidr": event["wifi_cidr"] or "",
         "wifi_public_ip": event["wifi_public_ip"] or "",
+        "department": departments.resolve(event.get("department"), None)[0],
+    
     }
     return render_template("organizer/event_form.html", form=form, event=event)
 
@@ -288,6 +297,9 @@ def event_feedback(event_id):
 @role_required("organizer", "admin")
 def cancel_event(event_id):
     event = _owned_event(event_id)
+    if event["end_datetime"] < datetime.now():
+        flash("This event is over and can no longer be cancelled.", "error")
+        return redirect(url_for("organizer.event_detail", event_id=event_id))
     db.execute("UPDATE events SET status = 'cancelled' WHERE id = %s", (event_id,))
     flash(f"'{event['title']}' is cancelled and no longer listed for students.", "success")
     return redirect(url_for("organizer.dashboard"))

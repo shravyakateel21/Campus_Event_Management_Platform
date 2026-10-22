@@ -1,23 +1,24 @@
-{% extends "base.html" %}
-{% block title %}Log in · Campus Events{% endblock %}
-{% block content %}
-<div class="auth">
-  <div class="auth-card">
-    <h1>Log in</h1>
-    <p class="lede">Students, organizers and administrators use the same login.</p>
-    <form class="form" method="post">
-      <div class="field">
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" value="{{ email }}" required autofocus>
-      </div>
-      <div class="field">
+{% extends "auth_layout.html" %}
+{% block title %}Log in{% endblock %}
+{% block side_title %}Welcome back{% endblock %}
+{% block form %}
+  <h1>Log in</h1>
+  <p class="sub">{% if event %}Log in to register for {{ event.title }}.{% elif next_url %}Log in to continue where you left off.{% else %}Students, organizers and administrators use the same login.{% endif %}</p>
+
+  <form class="ax-form" method="post">
+    <div class="ax-field">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" value="{{ email }}" required autofocus autocomplete="username">
+    </div>
+    <div class="ax-field">
+      <div class="ax-labelrow">
         <label for="password">Password</label>
-        <input type="password" id="password" name="password" required>
-        <span class="hint"><a href="{{ url_for('auth.forgot_password') }}">Forgot password?</a></span>
+        <a class="ax-link" href="{{ url_for('auth.forgot_password') }}">Forgot password?</a>
       </div>
-      <button class="btn" type="submit">Log in</button>
-    </form>
-    <p class="auth-foot">New student? <a href="{{ url_for('auth.register') }}">Create an account</a></p>
-  </div>
-</div>
+      <input type="password" id="password" name="password" required autocomplete="current-password">
+    </div>
+    <button class="btn green" type="submit">Log in</button>
+  </form>
+
+  <p class="ax-alt">New student? <a href="{{ url_for('auth.register', next=next_url) }}">Create an account</a></p>
 {% endblock %}

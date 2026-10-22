@@ -50,7 +50,11 @@
           <a class="btn btn-outline" href="{{ url_for('student.attendance', event_id=event.id) }}">Attendance opens {{ attendance_opens|dt('%d %b, %I:%M %p') }}</a>
         {% endif %}
         {% if event.end_datetime < now and event.my_attendance %}
-          <a class="btn btn-outline" href="{{ url_for('student.feedback', event_id=event.id) }}">{{ 'Edit feedback' if event.my_feedback else 'Give feedback' }}</a>
+          {% if event.my_feedback %}
+  <button class="btn btn-outline" type="button" disabled title="Feedback has been submitted and can no longer be edited">Edit feedback</button>
+{% else %}
+  <a class="btn btn-outline" href="{{ url_for('student.feedback', event_id=event.id) }}">Give feedback</a>
+{% endif %}
           <a class="btn btn-outline" href="{{ url_for('student.certificate_download', event_id=event.id) }}">Download certificate</a>
         {% endif %}
         {% if event.start_datetime > now and not event.my_attendance %}
