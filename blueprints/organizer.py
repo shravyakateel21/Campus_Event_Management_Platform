@@ -90,16 +90,16 @@ def _read_event_form():
         errors.append("Add the venue network range, or the campus gateway IP, "
                       "so students can mark attendance.")
 
+    if form["department"] not in departments.DEPARTMENTS:
+        errors.append("Choose the department organizing this event.")
+
     values = None
     if not errors:
         values = (form["title"], form["description"] or None, form["category"], form["venue"],
                   start, end, deadline, capacity,
                   form["wifi_ssid"] or None, form["wifi_cidr"] or None,
-                  form["wifi_public_ip"] or None)
+                  form["wifi_public_ip"] or None, form["department"])
     return form, errors, values
-
-    if form["department"] not in departments.DEPARTMENTS:
-        errors.append("Choose the department organizing this event.")
 
 
 @organizer_bp.route("/")
@@ -201,7 +201,7 @@ def edit_event(event_id):
 def event_detail(event_id):
     event = _owned_event(event_id)
     participants = db.query_all(
-        "SELECT u.id, u.name, u.usn, u.email, u.department, r.registered_at,"
+        "SELECT u.id, u.name, u.email, u.department, r.registered_at,"
         "       a.marked_at, a.method, a.ip_address,"
         "       f.rating, c.certificate_code"
         "  FROM registrations r"
@@ -249,7 +249,7 @@ def mark_attendance_manually(event_id, student_id):
 def attendance_csv(event_id):
     event = _owned_event(event_id)
     rows = db.query_all(
-        "SELECT u.name, u.usn, u.email, u.department, r.registered_at,"
+        "SELECT u.name, u.email, u.department, r.registered_at,"
         "       a.marked_at, a.method, a.ip_address, f.rating, f.comments, c.certificate_code"
         "  FROM registrations r"
         "  JOIN users u ON u.id = r.student_id"
@@ -260,12 +260,12 @@ def attendance_csv(event_id):
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Name", "USN", "Email", "Department", "Registered on",
+    writer.writerow(["Name", "Email", "Department", "Registered on",
                      "Attendance", "Marked at", "Method", "IP address",
                      "Rating", "Comments", "Certificate ID"])
     for row in rows:
         writer.writerow([
-            row["name"], row["usn"] or "", row["email"], row["department"] or "",
+            row["name"], row["email"], row["department"] or "",
             row["registered_at"].strftime("%Y-%m-%d %H:%M"),
             "Present" if row["marked_at"] else "Absent",
             row["marked_at"].strftime("%Y-%m-%d %H:%M") if row["marked_at"] else "",
@@ -284,7 +284,7 @@ def attendance_csv(event_id):
 def event_feedback(event_id):
     event = _owned_event(event_id)
     rows = db.query_all(
-        "SELECT f.rating, f.comments, f.submitted_at, u.name, u.usn"
+        "SELECT f.rating, f.comments, f.submitted_at, u.name"
         "  FROM feedback f JOIN users u ON u.id = f.student_id"
         " WHERE f.event_id = %s ORDER BY f.submitted_at DESC", (event_id,))
     average = round(sum(r["rating"] for r in rows) / len(rows), 2) if rows else None

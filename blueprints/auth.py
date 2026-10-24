@@ -87,12 +87,12 @@ def register():
 
     next_url = _safe_next(request.args.get("next"))
     event_ctx = _event_for_next(next_url)
-    form = {"name": "", "email": "", "usn": "", "department": "", "phone": ""}
+    form = {"name": "", "email": "", "department": "", "phone": ""}
 
     if request.method == "POST":
         form = {k: request.form.get(k, "").strip() for k in form}
         form["email"] = form["email"].lower()
-        form["usn"] = form["usn"].upper()
+        # (removed: form["usn"] = form["usn"].upper())
         password = request.form.get("password", "")
         confirm = request.form.get("confirm_password", "")
 
@@ -117,11 +117,11 @@ def register():
             return render_template("register.html", form=form, next_url=next_url, event=event_ctx)
 
         db.execute(
-            "INSERT INTO users (name, email, password_hash, role, usn, department, phone) "
-            "VALUES (%s, %s, %s, 'student', %s, %s, %s)",
-            (form["name"], form["email"], generate_password_hash(password),
-             form["usn"] or None, form["department"] or None, form["phone"] or None),
-        )
+                "INSERT INTO users (name, email, password_hash, role, department, phone) "
+                "VALUES (%s, %s, %s, 'student', %s, %s)",
+                (form["name"], form["email"], generate_password_hash(password),
+                 form["department"] or None, form["phone"] or None),
+            )
         flash("Account created. Log in to continue.", "success")
         return redirect(url_for("auth.login", next=next_url))
 

@@ -124,16 +124,12 @@ def build_certificate_pdf(*, student, event, certificate, college_name, signator
     _signature_block(pdf, 968, dept.get("hod_name", ""),
                      dept.get("hod_title") or "Head of Department",
                      dept.get("hod_signature"), regular, bold)
-    if dept.get("coordinator_name"):
-        _signature_block(pdf, 229, dept["coordinator_name"],
-                         dept.get("coordinator_title") or "Coordinator",
-                         dept.get("coordinator_signature"), regular, bold)
+    p = departments.PRINCIPAL
+    _signature_block(pdf, 229, p["name"], p["title"], p["signature"], regular, bold)
 
     # 3. the sentence under the dotted line (shrinks a little if the event title is long)
     held_on = event["start_datetime"].strftime("%d %B %Y")
     venue = event.get("venue") or "the campus"
-    usn = (student.get("usn") or "").strip()
-    usn_part = f"bearing USN: <b>{_esc(usn)}</b> " if usn else ""
     html = (f"{usn_part}has actively participated in <b>{_esc(event['title'])}</b> "
             f"held on {held_on} at {_esc(venue)}, organized by the Department of "
             f"{_esc(dept['name'])}, {COLLEGE_LINE}.")

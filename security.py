@@ -23,7 +23,7 @@ def load_current_user():
     user_id = session.get("user_id")
     if user_id:
         g.user = db.query_one(
-            "SELECT id, name, email, role, usn, department, is_active "
+            "SELECT id, name, email, role, department, is_active "
             "FROM users WHERE id = %s",
             (user_id,),
         )

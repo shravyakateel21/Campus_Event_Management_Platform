@@ -221,7 +221,7 @@ def reports():
         " FROM events e WHERE e.status = 'approved' GROUP BY e.category ORDER BY registrations DESC")
 
     top_students = db.query_all(
-        "SELECT u.name, u.usn, COUNT(a.id) AS events_attended"
+        "SELECT u.name, COUNT(a.id) AS events_attended"
         " FROM attendance a JOIN users u ON u.id = a.student_id"
         " GROUP BY u.id, u.name, u.usn ORDER BY events_attended DESC, u.name LIMIT 10")
 

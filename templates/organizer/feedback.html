@@ -21,7 +21,7 @@
     <tbody>
       {% for r in rows %}
       <tr>
-        <td>{{ r.name }}<div class="meta">{{ r.usn or '' }}</div></td>
+        <td>{{ r.name }}</td>
         <td class="num">{{ r.rating }}</td>
         <td>{{ r.comments or '-' }}</td>
         <td>{{ r.submitted_at|dt('%d %b, %I:%M %p') }}</td>
