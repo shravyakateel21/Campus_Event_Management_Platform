@@ -10,6 +10,7 @@ import certificates as cert
 import db
 import wifi
 from security import role_required
+from mailer import send_email
 
 student_bp = Blueprint("student", __name__, url_prefix="/student")
 
@@ -287,9 +288,14 @@ def feedback(event_id):
             db.execute("INSERT INTO feedback (event_id, student_id, rating, comments) "
                        "VALUES (%s, %s, %s, %s)",
                        (event_id, g.user["id"], rating, comments or None))
-        flash("Thanks for the feedback.", "success")
+        if _email_certificate(event):
+            flash("Thanks for the feedback. Your certificate has been e-mailed to "
+                  + g.user["email"] + ".", "success")
+        else:
+            flash("Thanks for the feedback. We couldn't e-mail your certificate right now - "
+                  "you can download it from the Certificates page.", "success")
         return redirect(url_for("student.event_detail", event_id=event_id))
-
+        
     return render_template("student/feedback.html", event=event,
                            comments=(event["my_feedback"] or {}).get("comments", ""))
 
@@ -297,7 +303,52 @@ def feedback(event_id):
 # --------------------------------------------------------------------------
 # Certificates
 # --------------------------------------------------------------------------
+def _issue_certificate(event, sid):
+    """Return this student's certificate record, creating it on first use."""
+    record = event["my_certificate"]
+    if record is None:
+        code = cert.new_certificate_code(event["id"], sid)
+        try:
+            db.execute("INSERT INTO certificates (event_id, student_id, certificate_code) "
+                       "VALUES (%s, %s, %s)", (event["id"], sid, code))
+        except mysql.connector.IntegrityError:
+            pass  # another tab issued it a moment ago
+        record = db.query_one(
+            "SELECT * FROM certificates WHERE event_id = %s AND student_id = %s",
+            (event["id"], sid))
+    return record
 
+
+def _certificate_pdf(event, record):
+    return cert.build_certificate_pdf(
+        student=g.user, event=event, certificate=record,
+        college_name=current_app.config["COLLEGE_NAME"],
+        signatory=current_app.config["CERTIFICATE_SIGNATORY"])
+
+
+def _certificate_filename(event):
+    return f"certificate-{event['title'][:30].replace(' ', '-').lower()}.pdf"
+
+
+def _email_certificate(event):
+    """Issue the certificate and e-mail it. Returns True if sent.
+    A mail problem never blocks the feedback from being saved."""
+    try:
+        record = _issue_certificate(event, g.user["id"])
+        pdf = _certificate_pdf(event, record)
+        text = (f"Hi {g.user['name']},\n\n"
+                f"Thank you for your feedback on \"{event['title']}\".\n"
+                f"Your participation certificate is attached to this e-mail.\n\n"
+                f"Certificate ID: {record['certificate_code']}\n\n"
+                f"{current_app.config['COLLEGE_NAME']}")
+        return send_email(
+            g.user["email"], f"Your certificate - {event['title']}", text,
+            attachments=[(_certificate_filename(event), pdf.getvalue(),
+                          "application", "pdf")])
+    except Exception as exc:
+        current_app.logger.error("Certificate e-mail failed: %s", exc)
+        return False
+    
 @student_bp.route("/certificates")
 @role_required("student")
 def certificate_list():

@@ -7,8 +7,12 @@ from email.message import EmailMessage
 from flask import current_app
 
 
-def send_email(to, subject, text):
-    """Send a plain-text e-mail. Returns True when the server accepted it.
+def send_email(to, subject, text, attachments=None):
+    """Send a plain-text e-mail, optionally with attachments.
+    Returns True when the server accepted it.
+
+    attachments: list of (filename, bytes, maintype, subtype),
+    e.g. [("certificate.pdf", pdf_bytes, "application", "pdf")]
 
     If MAIL_SERVER is empty (e-mail switched off) nothing is sent. While the app
     runs in debug mode the message is printed in the terminal instead, so the
@@ -30,6 +34,9 @@ def send_email(to, subject, text):
     msg["From"] = cfg["MAIL_FROM"]
     msg["To"] = to
     msg.set_content(text)
+
+    for filename, data, maintype, subtype in (attachments or []):
+        msg.add_attachment(data, maintype=maintype, subtype=subtype, filename=filename)
 
     try:
         context = ssl.create_default_context()

@@ -108,8 +108,6 @@ def register():
             errors.append("The two passwords do not match.")
         if db.query_one("SELECT id FROM users WHERE email = %s", (form["email"],)):
             errors.append("An account already exists with this email.")
-        if form["usn"] and db.query_one("SELECT id FROM users WHERE usn = %s", (form["usn"],)):
-            errors.append("An account already exists with this USN.")
 
         if errors:
             for message in errors:
