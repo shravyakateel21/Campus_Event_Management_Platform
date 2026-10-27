@@ -128,12 +128,15 @@ def build_certificate_pdf(*, student, event, certificate, college_name, signator
     _signature_block(pdf, 229, p["name"], p["title"], p["signature"], regular, bold)
 
     # 3. the sentence under the dotted line (shrinks a little if the event title is long)
-    held_on = event["start_datetime"].strftime("%d %B %Y")
+    start, end = event["start_datetime"], event["end_datetime"]
+    if start.date() == end.date():
+        held_on = f"held on {start.strftime('%d %B %Y')}"
+    else:  # multi-day event: show both the first and the last day
+        held_on = f"held from {start.strftime('%d %B %Y')} to {end.strftime('%d %B %Y')}"
     venue = event.get("venue") or "the campus"
     html = (f"has actively participated in <b>{_esc(event['title'])}</b> "
-        f"held on {held_on} at {_esc(venue)}, organized by the Department of "
-        f"{_esc(dept['name'])}, {COLLEGE_LINE}.")
-
+            f"{held_on} at {_esc(venue)}, organized by the Department of "
+            f"{_esc(dept['name'])}, {COLLEGE_LINE}.")
     area_w, area_h = 930, 112
     for font_size in (24, 23, 22, 21, 20, 19, 18, 17, 16):
         style = ParagraphStyle("body", fontName=regular, fontSize=font_size,

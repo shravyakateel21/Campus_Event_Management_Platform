@@ -44,17 +44,20 @@
           <button class="btn" type="submit">Register</button>
         </form>
       {% elif event.my_registration and event.my_registration.status == 'registered' %}
-        {% if attendance_opens <= now <= attendance_closes %}
+        {% if event.my_attendance %}
+          <button class="btn btn-outline" type="button" disabled
+                  title="Your attendance has already been recorded">Attendance marked</button>
+        {% elif attendance_opens <= now <= attendance_closes %}
           <a class="btn" href="{{ url_for('student.attendance', event_id=event.id) }}">Mark attendance</a>
         {% elif now < attendance_opens %}
           <a class="btn btn-outline" href="{{ url_for('student.attendance', event_id=event.id) }}">Attendance opens {{ attendance_opens|dt('%d %b, %I:%M %p') }}</a>
         {% endif %}
         {% if event.end_datetime < now and event.my_attendance %}
           {% if event.my_feedback %}
-  <button class="btn btn-outline" type="button" disabled title="Feedback has been submitted and can no longer be edited">Edit feedback</button>
-{% else %}
-  <a class="btn btn-outline" href="{{ url_for('student.feedback', event_id=event.id) }}">Give feedback</a>
-{% endif %}
+            <button class="btn btn-outline" type="button" disabled title="Feedback has been submitted and can no longer be edited">Edit feedback</button>
+          {% else %}
+            <a class="btn btn-outline" href="{{ url_for('student.feedback', event_id=event.id) }}">Give feedback</a>
+          {% endif %}
           <a class="btn btn-outline" href="{{ url_for('student.certificate_download', event_id=event.id) }}">Download certificate</a>
         {% endif %}
         {% if event.start_datetime > now and not event.my_attendance %}

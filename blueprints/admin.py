@@ -124,6 +124,51 @@ def review_event(event_id):
     flash(f"'{event['title']}' is {wording}.", "success")
     return redirect(request.referrer or url_for("admin.events"))
 
+@admin_bp.route("/events/<int:event_id>/extend-registration", methods=["POST"])
+@role_required("admin")
+def extend_registration(event_id):
+    """Push the registration deadline later, but only for an event nobody has joined."""
+    event = db.query_one(
+        "SELECT e.title, e.status, e.end_datetime, e.registration_deadline,"
+        " (SELECT COUNT(*) FROM registrations r"
+        "   WHERE r.event_id = e.id AND r.status = 'registered') AS registered_count"
+        " FROM events e WHERE e.id = %s", (event_id,))
+    back = redirect(request.referrer or url_for("admin.events"))
+    if event is None:
+        flash("That event no longer exists.", "error")
+        return back
+    if event["status"] != "approved":
+        flash("Only approved events can have their registration extended.", "error")
+        return back
+    if event["registered_count"] > 0:
+        flash("Students have already registered for this event, so its deadline can't be extended.", "error")
+        return back
+
+    now = datetime.now()
+    if event["end_datetime"] < now:
+        flash("This event is over.", "error")
+        return back
+    try:
+        new_deadline = datetime.strptime(request.form.get("registration_deadline", ""),
+                                         "%Y-%m-%dT%H:%M")
+    except ValueError:
+        flash("Enter a valid new registration date and time.", "error")
+        return back
+    if new_deadline <= now:
+        flash("The new deadline must be in the future.", "error")
+        return back
+    if new_deadline <= event["registration_deadline"]:
+        flash("The new deadline must be later than the current one.", "error")
+        return back
+    if new_deadline > event["end_datetime"]:
+        flash("Registration can't stay open past the end of the event.", "error")
+        return back
+
+    db.execute("UPDATE events SET registration_deadline = %s WHERE id = %s",
+               (new_deadline, event_id))
+    flash(f"Registration for '{event['title']}' now closes on "
+          f"{new_deadline.strftime('%d %b %Y, %I:%M %p')}.", "success")
+    return back
 
 @admin_bp.route("/users")
 @role_required("admin")
