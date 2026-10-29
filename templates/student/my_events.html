@@ -27,6 +27,9 @@
             {% if e.attended %}
               <button class="btn btn-outline btn-small" type="button" disabled
                       title="Attendance recorded. Feedback opens after the event ends.">Attendance marked</button>
+            {% elif now < e.attendance_opens %}
+              <button class="btn btn-outline btn-small" type="button" disabled
+                      title="Attendance has not opened yet">Opens {{ e.attendance_opens|dt('%d %b, %I:%M %p') }}</button>
             {% else %}
               <a class="btn btn-outline btn-small" href="{{ url_for('student.attendance', event_id=e.id) }}">Attendance</a>
             {% endif %}

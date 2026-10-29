@@ -9,7 +9,7 @@ from flask import (Blueprint, Response, abort, flash, g, redirect,
                    render_template, request, url_for)
 
 import db
-import departments  
+import departments
 import wifi
 from security import role_required
 
@@ -142,11 +142,11 @@ def create_event():
             return render_template("organizer/event_form.html", form=form, event=None)
 
         event_id = db.execute(
-                "INSERT INTO events (title, description, category, venue, start_datetime,"
-                " end_datetime, registration_deadline, capacity, wifi_ssid, wifi_cidr,"
-                " wifi_public_ip, department, organizer_id, status)"
-                " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending')",
-                values + (g.user["id"],))
+            "INSERT INTO events (title, description, category, venue, start_datetime,"
+            " end_datetime, registration_deadline, capacity, wifi_ssid, wifi_cidr,"
+            " wifi_public_ip, department, organizer_id, status)"
+            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending')",
+            values + (g.user["id"],))
         flash("Event saved and sent to the administrator for approval.", "success")
         return redirect(url_for("organizer.event_detail", event_id=event_id))
 
@@ -157,6 +157,11 @@ def create_event():
 @role_required("organizer", "admin")
 def edit_event(event_id):
     event = _owned_event(event_id)
+
+    # Once the event has started its details are locked, for everyone.
+    if event["start_datetime"] <= datetime.now():
+        flash("This event has already started and can no longer be edited.", "error")
+        return redirect(url_for("organizer.event_detail", event_id=event_id))
 
     # Organizers can only edit events that are still waiting for approval.
     if g.user["role"] != "admin" and event["status"] != "pending":
@@ -191,7 +196,6 @@ def edit_event(event_id):
         "wifi_ssid": event["wifi_ssid"] or "", "wifi_cidr": event["wifi_cidr"] or "",
         "wifi_public_ip": event["wifi_public_ip"] or "",
         "department": departments.resolve(event.get("department"), None)[0],
-    
     }
     return render_template("organizer/event_form.html", form=form, event=event)
 
@@ -248,6 +252,9 @@ def mark_attendance_manually(event_id, student_id):
 @role_required("organizer", "admin")
 def attendance_csv(event_id):
     event = _owned_event(event_id)
+    if event["end_datetime"] > datetime.now():
+        flash("The report is available once the event has ended.", "error")
+        return redirect(url_for("organizer.event_detail", event_id=event_id))
     rows = db.query_all(
         "SELECT u.name, u.email, u.department, r.registered_at,"
         "       a.marked_at, a.method, a.ip_address, f.rating, f.comments, c.certificate_code"
@@ -283,6 +290,9 @@ def attendance_csv(event_id):
 @role_required("organizer", "admin")
 def event_feedback(event_id):
     event = _owned_event(event_id)
+    if event["end_datetime"] > datetime.now():
+        flash("Feedback can be viewed once the event has ended.", "error")
+        return redirect(url_for("organizer.event_detail", event_id=event_id))
     rows = db.query_all(
         "SELECT f.rating, f.comments, f.submitted_at, u.name"
         "  FROM feedback f JOIN users u ON u.id = f.student_id"

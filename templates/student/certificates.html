@@ -3,7 +3,7 @@
 {% block title %}Certificates · Campus Events{% endblock %}
 {% block content %}
 <h1>Certificates</h1>
-<p class="lede">A certificate is issued for every event where your attendance was recorded, once the event has ended.</p>
+<p class="lede">A certificate is issued for every event where your attendance was recorded, once the event has ended and you have submitted your feedback.</p>
 
 {% if rows %}
 <div class="table-wrap">
@@ -16,10 +16,15 @@
         <td>{{ r.start_datetime|dt('%d %b %Y') }}</td>
         <td>{{ r.certificate_code or 'Not issued yet' }}</td>
         <td>
-          {% if r.end_datetime < now %}
+          {% if r.end_datetime >= now %}
+            <span class="tag tag-pending">After the event</span>
+          {% elif r.feedback_id %}
             <a class="btn btn-outline btn-small" href="{{ url_for('student.certificate_download', event_id=r.id) }}">PDF</a>
           {% else %}
-            <span class="tag tag-pending">After the event</span>
+            {# no feedback yet: the click opens a pop-up (the link still works without JavaScript) #}
+            <a class="btn btn-outline btn-small js-need-feedback"
+               href="{{ url_for('student.feedback', event_id=r.id) }}"
+               data-title="{{ r.title }}">PDF</a>
           {% endif %}
         </td>
       </tr>
@@ -27,6 +32,39 @@
     </tbody>
   </table>
 </div>
+
+<dialog id="feedback-dialog" style="max-width:420px;width:90%;border:1px solid #d9dff0;border-radius:14px;padding:24px">
+  <h3 style="margin-top:0">Feedback needed</h3>
+  <p style="margin:0 0 18px">Please submit your feedback for <b id="fd-title"></b> before downloading the certificate.</p>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button type="button" class="btn btn-outline btn-small" id="fd-close">Close</button>
+    <a class="btn btn-small" id="fd-go" href="#">Give feedback</a>
+  </div>
+</dialog>
+
+<script>
+  (function () {
+    var dlg = document.getElementById('feedback-dialog');
+    var title = document.getElementById('fd-title');
+    var go = document.getElementById('fd-go');
+    document.getElementById('fd-close').addEventListener('click', function () { dlg.close(); });
+    document.querySelectorAll('.js-need-feedback').forEach(function (link) {
+      link.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        var name = link.getAttribute('data-title');
+        if (typeof dlg.showModal !== 'function') {          // very old browsers
+          if (confirm('Please submit your feedback for "' + name + '" before downloading the certificate. Go to the feedback page now?')) {
+            window.location.href = link.href;
+          }
+          return;
+        }
+        title.textContent = name;
+        go.href = link.href;
+        dlg.showModal();
+      });
+    });
+  })();
+</script>
 {% else %}
   <div class="empty"><p>No certificates yet. They appear here after your attendance is recorded at an event.</p></div>
 {% endif %}

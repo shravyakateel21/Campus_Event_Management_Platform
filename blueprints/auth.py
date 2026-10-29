@@ -1,6 +1,7 @@
 """Login, student self-registration and logout."""
 
 import hashlib
+import hmac
 import re
 import secrets
 from urllib.parse import urlparse
@@ -92,7 +93,6 @@ def register():
     if request.method == "POST":
         form = {k: request.form.get(k, "").strip() for k in form}
         form["email"] = form["email"].lower()
-        # (removed: form["usn"] = form["usn"].upper())
         password = request.form.get("password", "")
         confirm = request.form.get("confirm_password", "")
 
@@ -115,11 +115,11 @@ def register():
             return render_template("register.html", form=form, next_url=next_url, event=event_ctx)
 
         db.execute(
-                "INSERT INTO users (name, email, password_hash, role, department, phone) "
-                "VALUES (%s, %s, %s, 'student', %s, %s)",
-                (form["name"], form["email"], generate_password_hash(password),
-                 form["department"] or None, form["phone"] or None),
-            )
+            "INSERT INTO users (name, email, password_hash, role, department, phone) "
+            "VALUES (%s, %s, %s, 'student', %s, %s)",
+            (form["name"], form["email"], generate_password_hash(password),
+             form["department"] or None, form["phone"] or None),
+        )
         flash("Account created. Log in to continue.", "success")
         return redirect(url_for("auth.login", next=next_url))
 
@@ -131,49 +131,54 @@ def logout():
     session.clear()
     return redirect(url_for("index"))
 
+
 # ---------------------------------------------------------------- forgot password
-# Step 1 (/forgot-password):        the person types their e-mail; a reset LINK is
-#                                   e-mailed to that address.
-# Step 2 (/reset-password/<token>): the link opens a page where they choose a new password.
+# Step 1 (/forgot-password): the person types their e-mail; a 6-digit code is e-mailed.
+# Step 2 (/verify-otp):      they type the code. A wrong code counts as an attempt.
+# Step 3 (/reset-password/<token>): after the right code they choose a new password.
+#                            (<token> is a one-time secret created at step 2, not the code.)
 
 def _token_hash(token):
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-def _site_base():
-    """Address put in the e-mailed link (SITE_URL in .env, else the address of the request)."""
-    return (current_app.config["SITE_URL"] or request.host_url).rstrip("/")
+def _otp_hash(user_id, otp):
+    """Keyed hash of the code, so the digits can't be read back out of the database."""
+    key = current_app.config["SECRET_KEY"].encode()
+    return hmac.new(key, f"{user_id}:{otp}".encode(), hashlib.sha256).hexdigest()
 
 
-def _send_reset_link(user, email):
+def _send_reset_otp(user, email):
+    """E-mail a fresh 6-digit code. Returns False if one was sent a moment ago."""
     cfg = current_app.config
-    # Do not send another link while the previous one is still fresh.
+    # One code per RESET_RESEND_SECONDS. Used-up codes count too, so locking a code
+    # out with wrong guesses does not let anyone ask for a new one straight away.
     recent = db.scalar(
-        "SELECT COUNT(*) FROM password_resets WHERE user_id = %s AND used_at IS NULL "
+        "SELECT COUNT(*) FROM password_resets WHERE user_id = %s "
         "AND created_at > DATE_SUB(NOW(), INTERVAL %s SECOND)",
         (user["id"], cfg["RESET_RESEND_SECONDS"]))
     if recent:
-        return
+        return False
 
-    token = secrets.token_urlsafe(32)
+    otp = f"{secrets.randbelow(1_000_000):06d}"
     db.execute("DELETE FROM password_resets WHERE user_id = %s", (user["id"],))
     db.execute(
         "INSERT INTO password_resets (user_id, token_hash, expires_at) "
         "VALUES (%s, %s, DATE_ADD(NOW(), INTERVAL %s MINUTE))",
-        (user["id"], _token_hash(token), cfg["RESET_LINK_MINUTES"]))
+        (user["id"], _otp_hash(user["id"], otp), cfg["RESET_OTP_MINUTES"]))
 
-    link = f"{_site_base()}{url_for('auth.reset_password', token=token)}"
     mailer.send_email(
         email,
-        f"Reset your password - {cfg['COLLEGE_NAME']}",
+        f"Your password reset code - {cfg['COLLEGE_NAME']}",
         f"Hello {user['name']},\n\n"
         "We received a request to reset your Campus Events password.\n"
-        "Click the link below to choose a new password:\n\n"
-        f"{link}\n\n"
-        f"This link is valid for {cfg['RESET_LINK_MINUTES']} minutes and can be used once.\n\n"
+        f"Your verification code is:  {otp}\n\n"
+        f"This code is valid for {cfg['RESET_OTP_MINUTES']} minutes. "
+        "Do not share it with anyone.\n\n"
         "If you did not ask to reset your password, ignore this e-mail - "
         "your password has not been changed.\n\n"
         f"{cfg['COLLEGE_NAME']} - Campus Events")
+    return True
 
 
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
@@ -192,14 +197,78 @@ def forgot_password():
             "SELECT id, name, role, is_active FROM users WHERE email = %s", (email,))
         # Administrator passwords are not reset from the website.
         if user and user["is_active"] and user["role"] != "admin":
-            _send_reset_link(user, email)
+            _send_reset_otp(user, email)
 
-        flash("If that email is registered, a password reset link has been sent to it. "
-              f"The link is valid for {current_app.config['RESET_LINK_MINUTES']} minutes.",
+        # Same answer whether or not the address is registered.
+        session["reset_email"] = email
+        flash("If that email is registered, a 6-digit code has been sent to it. "
+              f"The code is valid for {current_app.config['RESET_OTP_MINUTES']} minutes.",
               "success")
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("auth.verify_otp"))
 
     return render_template("forgot_password.html", email=email)
+
+
+@auth_bp.route("/verify-otp", methods=["GET", "POST"])
+def verify_otp():
+    if g.user:
+        return redirect(url_for(security.HOME_FOR_ROLE[g.user["role"]]))
+
+    email = session.get("reset_email")
+    if not email:
+        return redirect(url_for("auth.forgot_password"))
+
+    cfg = current_app.config
+    user = db.query_one(
+        "SELECT id, name, role, is_active FROM users WHERE email = %s", (email,))
+    eligible = bool(user and user["is_active"] and user["role"] != "admin")
+
+    if request.method == "POST":
+        # "Send a new code" button
+        if request.form.get("action") == "resend":
+            if eligible:
+                _send_reset_otp(user, email)
+            flash("If that email is registered, a new code has been sent. "
+                  f"You can ask for another one after {cfg['RESET_RESEND_SECONDS']} seconds.",
+                  "success")
+            return redirect(url_for("auth.verify_otp"))
+
+        code = request.form.get("otp", "").strip()
+        if not re.fullmatch(r"\d{6}", code):
+            flash("Enter the 6-digit code from the e-mail.", "error")
+            return redirect(url_for("auth.verify_otp"))
+
+        row = None
+        if eligible:
+            row = db.query_one(
+                "SELECT id, token_hash, attempts FROM password_resets "
+                "WHERE user_id = %s AND used_at IS NULL AND expires_at > NOW()",
+                (user["id"],))
+
+        if row and hmac.compare_digest(row["token_hash"], _otp_hash(user["id"], code)):
+            # Right code: swap it for a one-time secret that the next page needs.
+            proof = secrets.token_urlsafe(32)
+            db.execute(
+                "UPDATE password_resets SET token_hash = %s, attempts = 0, "
+                "expires_at = DATE_ADD(NOW(), INTERVAL %s MINUTE) WHERE id = %s",
+                (_token_hash(proof), cfg["RESET_LINK_MINUTES"], row["id"]))
+            session.pop("reset_email", None)
+            return redirect(url_for("auth.reset_password", token=proof))
+
+        if row:
+            db.execute("UPDATE password_resets SET attempts = attempts + 1 WHERE id = %s",
+                       (row["id"],))
+            if row["attempts"] + 1 >= cfg["RESET_MAX_ATTEMPTS"]:
+                db.execute("UPDATE password_resets SET used_at = NOW() WHERE id = %s",
+                           (row["id"],))
+                session.pop("reset_email", None)
+                flash("Too many wrong attempts. Please request a new code.", "error")
+                return redirect(url_for("auth.forgot_password"))
+
+        flash("That code is incorrect or has expired.", "error")
+        return redirect(url_for("auth.verify_otp"))
+
+    return render_template("verify_otp.html", email=email, minutes=cfg["RESET_OTP_MINUTES"])
 
 
 def _user_for_token(token):
@@ -218,7 +287,7 @@ def reset_password(token):
 
     user = _user_for_token(token)
     if user is None:
-        flash("This reset link is invalid or has expired. Request a new one.", "error")
+        flash("This reset session is invalid or has expired. Please start again.", "error")
         return redirect(url_for("auth.forgot_password"))
 
     if request.method == "POST":

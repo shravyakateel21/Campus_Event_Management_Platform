@@ -47,7 +47,7 @@ class Config:
     COLLEGE_NAME = os.getenv("COLLEGE_NAME", "A J Institute of Engineering & Technology")
     CERTIFICATE_SIGNATORY = os.getenv("CERTIFICATE_SIGNATORY", "Head of Department")
 
-        # E-mail for certificates. Leave MAIL_SERVER empty to switch e-mailing off.
+    # E-mail for certificates. Leave MAIL_SERVER empty to switch e-mailing off.
     MAIL_SERVER = os.getenv("MAIL_SERVER", "")
     MAIL_PORT = _int("MAIL_PORT", 587)
     MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "1") == "1"
@@ -63,6 +63,12 @@ class Config:
     DEFAULT_ADMIN_PASSWORD = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
     DEFAULT_ADMIN_NAME = os.getenv("DEFAULT_ADMIN_NAME", "Admin")
 
-    # Forgot password (6-digit code sent by e-mail)
-    RESET_LINK_MINUTES = _int("RESET_LINK_MINUTES", 30)       # how long a reset link stays valid
-    RESET_RESEND_SECONDS = _int("RESET_RESEND_SECONDS", 60)   # wait before another link is sent
+        # Forgot password (6-digit code sent by e-mail)
+    RESET_OTP_MINUTES = _int("RESET_OTP_MINUTES", 10)         # how long the code stays valid
+    RESET_MAX_ATTEMPTS = _int("RESET_MAX_ATTEMPTS", 5)        # wrong guesses allowed per code
+    RESET_LINK_MINUTES = _int("RESET_LINK_MINUTES", 30)       # time to choose the new password after the code is verified
+    RESET_RESEND_SECONDS = _int("RESET_RESEND_SECONDS", 60)   # wait before another code is sent
+
+    # Event reminders (need the MAIL_* settings)
+    REMINDER_HOURS_BEFORE = _int("REMINDER_HOURS_BEFORE", 24)    # e-mail students this many hours before the start
+    REMINDER_CHECK_MINUTES = _int("REMINDER_CHECK_MINUTES", 10)  # how often the app looks for due reminders

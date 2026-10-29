@@ -58,6 +58,15 @@ def _registration_state(event):
         return False, "All seats are taken."
     return True, ""
 
+def _add_attendance_state(rows, sid):
+    """Give each event row: attended (bool) and the attendance window (opens / closes)."""
+    attended = {r["event_id"] for r in db.query_all(
+        "SELECT event_id FROM attendance WHERE student_id = %s", (sid,))}
+    cfg = current_app.config
+    for row in rows:
+        row["attended"] = row["id"] in attended
+        row["attendance_opens"], row["attendance_closes"] = wifi.attendance_window(
+            row, cfg["ATTENDANCE_OPENS_BEFORE_MIN"], cfg["ATTENDANCE_CLOSES_AFTER_MIN"])
 
 @student_bp.route("/")
 @role_required("student")
@@ -72,6 +81,7 @@ def dashboard():
         " JOIN registrations r ON r.event_id = e.id AND r.student_id = %s"
         " WHERE r.status = 'registered' AND e.end_datetime >= NOW()"
         " ORDER BY e.start_datetime LIMIT 5", (sid,))
+    _add_attendance_state(my_next, sid)
     stats = {
         "registered": db.scalar(
             "SELECT COUNT(*) FROM registrations WHERE student_id = %s AND status = 'registered'", (sid,)),
@@ -180,12 +190,10 @@ def my_events():
         EVENT_WITH_COUNTS +
         " JOIN registrations r ON r.event_id = e.id AND r.student_id = %s"
         " WHERE r.status = 'registered' ORDER BY e.start_datetime DESC", (g.user["id"],))
-    attended = {r["event_id"] for r in db.query_all(
-        "SELECT event_id FROM attendance WHERE student_id = %s", (g.user["id"],))}
+    _add_attendance_state(rows, g.user["id"])
     given = {r["event_id"] for r in db.query_all(
         "SELECT event_id FROM feedback WHERE student_id = %s", (g.user["id"],))}
     for row in rows:
-        row["attended"] = row["id"] in attended
         row["feedback_given"] = row["id"] in given
     return render_template("student/my_events.html", events=rows, now=datetime.now())
 
@@ -354,10 +362,11 @@ def _email_certificate(event):
 def certificate_list():
     rows = db.query_all(
         "SELECT e.id, e.title, e.start_datetime, e.venue, e.end_datetime,"
-        "       a.marked_at, c.certificate_code, c.issued_at"
+        "       a.marked_at, c.certificate_code, c.issued_at, f.id AS feedback_id"
         "  FROM attendance a"
         "  JOIN events e ON e.id = a.event_id"
         "  LEFT JOIN certificates c ON c.event_id = e.id AND c.student_id = a.student_id"
+        "  LEFT JOIN feedback f ON f.event_id = e.id AND f.student_id = a.student_id"
         " WHERE a.student_id = %s ORDER BY e.start_datetime DESC", (g.user["id"],))
     return render_template("student/certificates.html", rows=rows, now=datetime.now())
 
@@ -375,6 +384,11 @@ def certificate_download(event_id):
     if not event["my_attendance"]:
         flash("A certificate needs a recorded attendance for this event.", "error")
         return redirect(url_for("student.event_detail", event_id=event_id))
+
+    # feedback must be submitted first
+    if not event["my_feedback"]:
+        flash("Please submit your feedback before downloading the certificate.", "error")
+        return redirect(url_for("student.feedback", event_id=event_id))
 
     record = event["my_certificate"]
     if record is None:
@@ -395,7 +409,6 @@ def certificate_download(event_id):
     filename = f"certificate-{event['title'][:30].replace(' ', '-').lower()}.pdf"
     return send_file(pdf, mimetype="application/pdf",
                      as_attachment=True, download_name=filename)
-
 
 @student_bp.route("/profile")
 @role_required("student")

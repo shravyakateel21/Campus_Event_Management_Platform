@@ -3,6 +3,7 @@
 Run locally with:  python app.py
 """
 
+import os
 from datetime import datetime
 
 from flask import Flask, g, redirect, render_template, url_for
@@ -10,6 +11,7 @@ from werkzeug.security import generate_password_hash
 
 import db
 import departments
+import reminders
 import security
 from blueprints.admin import admin_bp
 from blueprints.auth import auth_bp
@@ -63,7 +65,17 @@ def _ensure_password_reset_table(app):
             "AND table_name = 'password_resets' AND column_name = 'attempts'")
         if not has_attempts:
             db.execute("ALTER TABLE password_resets ADD COLUMN attempts TINYINT NOT NULL DEFAULT 0")
-        
+
+def _ensure_reminder_column(app):
+    """Add registrations.reminder_sent_at (used by event reminders) if it is missing."""
+    with app.app_context():
+        has_column = db.scalar(
+            "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() "
+            "AND table_name = 'registrations' AND column_name = 'reminder_sent_at'")
+        if not has_column:
+            db.execute("ALTER TABLE registrations ADD COLUMN reminder_sent_at DATETIME DEFAULT NULL")
+
+
 def _home_data():
     """Live numbers and upcoming events for the public landing page."""
     try:
@@ -87,6 +99,7 @@ def create_app(config_object=Config):
     db.init_app(app)
     _ensure_default_admin(app)
     _ensure_password_reset_table(app)
+    _ensure_reminder_column(app)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(student_bp)
@@ -131,5 +144,10 @@ def create_app(config_object=Config):
 
 
 if __name__ == "__main__":
+    DEBUG = True  # set to False before deploying
+    app = create_app()
+    # In debug mode Flask starts two processes; run the reminder job only in the real one.
+    if not DEBUG or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        reminders.start_reminder_thread(app)
     # host 0.0.0.0 so phones on the campus Wi-Fi can reach the server
-    create_app().run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=DEBUG)

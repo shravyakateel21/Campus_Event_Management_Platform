@@ -49,8 +49,12 @@
                   title="Your attendance has already been recorded">Attendance marked</button>
         {% elif attendance_opens <= now <= attendance_closes %}
           <a class="btn" href="{{ url_for('student.attendance', event_id=event.id) }}">Mark attendance</a>
-        {% elif now < attendance_opens %}
-          <a class="btn btn-outline" href="{{ url_for('student.attendance', event_id=event.id) }}">Attendance opens {{ attendance_opens|dt('%d %b, %I:%M %p') }}</a>
+                {% elif now < attendance_opens %}
+          <button class="btn btn-outline" type="button" disabled
+                  title="Attendance has not opened yet">Attendance opens {{ attendance_opens|dt('%d %b, %I:%M %p') }}</button>
+        {% else %}
+          <button class="btn btn-outline" type="button" disabled
+                  title="Attendance is closed">Attendance closed</button>
         {% endif %}
         {% if event.end_datetime < now and event.my_attendance %}
           {% if event.my_feedback %}

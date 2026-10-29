@@ -9,10 +9,22 @@
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     {% if event.status == 'pending' or g.user.role == 'admin' %}
-      <a class="btn btn-quiet" href="{{ url_for('organizer.edit_event', event_id=event.id) }}">Edit</a>
+      {% if event.start_datetime <= now %}
+        <button class="btn btn-quiet" type="button" disabled
+                title="This event has started and can no longer be edited">Edit</button>
+      {% else %}
+        <a class="btn btn-quiet" href="{{ url_for('organizer.edit_event', event_id=event.id) }}">Edit</a>
+      {% endif %}
     {% endif %}
-    <a class="btn btn-quiet" href="{{ url_for('organizer.event_feedback', event_id=event.id) }}">Feedback</a>
-    <a class="btn btn-outline" href="{{ url_for('organizer.attendance_csv', event_id=event.id) }}">Download report</a>
+    {% if event.end_datetime < now %}
+      <a class="btn btn-quiet" href="{{ url_for('organizer.event_feedback', event_id=event.id) }}">Feedback</a>
+      <a class="btn btn-outline" href="{{ url_for('organizer.attendance_csv', event_id=event.id) }}">Download report</a>
+    {% else %}
+      <button class="btn btn-quiet" type="button" disabled
+              title="Available after the event ends on {{ event.end_datetime|dt('%d %b, %I:%M %p') }}">Feedback</button>
+      <button class="btn btn-outline" type="button" disabled
+              title="Available after the event ends on {{ event.end_datetime|dt('%d %b, %I:%M %p') }}">Download report</button>
+    {% endif %}
   </div>
 </div>
 
@@ -43,7 +55,6 @@
       {% for p in participants %}
       <tr>
         <td>{{ p.name }}<div class="meta">{{ p.email }}</div></td>
-        <td>{{ p.usn or '-' }}</td>
         <td>{{ p.registered_at|dt('%d %b, %I:%M %p') }}</td>
         <td>
           {% if p.marked_at %}

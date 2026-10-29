@@ -21,7 +21,18 @@
         <div class="meta">{{ e.start_datetime|dt }} · {{ e.venue }}</div>
         <div class="event-actions">
           <a class="btn btn-outline btn-small" href="{{ url_for('student.event_detail', event_id=e.id) }}">Open</a>
-          <a class="btn btn-small" href="{{ url_for('student.attendance', event_id=e.id) }}">Mark attendance</a>
+                    {% if e.attended %}
+            <button class="btn btn-outline btn-small" type="button" disabled
+                    title="Your attendance has already been recorded">Attendance marked</button>
+          {% elif now < e.attendance_opens %}
+            <button class="btn btn-small" type="button" disabled
+                    title="Attendance has not opened yet">Opens {{ e.attendance_opens|dt('%d %b, %I:%M %p') }}</button>
+          {% elif now > e.attendance_closes %}
+            <button class="btn btn-small" type="button" disabled
+                    title="Attendance is closed">Attendance closed</button>
+          {% else %}
+            <a class="btn btn-small" href="{{ url_for('student.attendance', event_id=e.id) }}">Mark attendance</a>
+          {% endif %}
         </div>
       </article>
     {% endfor %}

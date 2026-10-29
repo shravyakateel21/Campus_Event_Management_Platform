@@ -16,6 +16,7 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
+
 @admin_bp.route("/")
 @role_required("admin")
 def dashboard():
@@ -89,7 +90,7 @@ def create_event():
                 flash(message, "error")
             return render_template("admin/event_form.html", form=form, organizers=organizers)
 
-            db.execute(
+        db.execute(
             "INSERT INTO events (title, description, category, venue, start_datetime,"
             " end_datetime, registration_deadline, capacity, wifi_ssid, wifi_cidr,"
             " wifi_public_ip, department, organizer_id, status)"
@@ -99,6 +100,7 @@ def create_event():
         return redirect(url_for("admin.events"))
 
     return render_template("admin/event_form.html", form=form, organizers=organizers)
+
 
 @admin_bp.route("/events/<int:event_id>/review", methods=["POST"])
 @role_required("admin")
@@ -123,6 +125,7 @@ def review_event(event_id):
                "rejected": "rejected", "cancelled": "cancelled"}[decision]
     flash(f"'{event['title']}' is {wording}.", "success")
     return redirect(request.referrer or url_for("admin.events"))
+
 
 @admin_bp.route("/events/<int:event_id>/extend-registration", methods=["POST"])
 @role_required("admin")
@@ -169,6 +172,7 @@ def extend_registration(event_id):
     flash(f"Registration for '{event['title']}' now closes on "
           f"{new_deadline.strftime('%d %b %Y, %I:%M %p')}.", "success")
     return back
+
 
 @admin_bp.route("/users")
 @role_required("admin")
@@ -268,7 +272,7 @@ def reports():
     top_students = db.query_all(
         "SELECT u.name, COUNT(a.id) AS events_attended"
         " FROM attendance a JOIN users u ON u.id = a.student_id"
-        " GROUP BY u.id, u.name, u.usn ORDER BY events_attended DESC, u.name LIMIT 10")
+        " GROUP BY u.id, u.name ORDER BY events_attended DESC, u.name LIMIT 10")
 
     return render_template("admin/reports.html", per_event=per_event,
                            by_category=by_category, top_students=top_students)

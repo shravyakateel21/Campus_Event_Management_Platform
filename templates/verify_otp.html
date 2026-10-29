@@ -1,0 +1,25 @@
+{% extends "auth_layout.html" %}
+{% block title %}Enter the code{% endblock %}
+{% block side_title %}Reset your password{% endblock %}
+{% block form %}
+  <h1>Enter the 6-digit code</h1>
+  <p class="sub">We sent a code to <b>{{ email }}</b>. It is valid for {{ minutes }} minutes.</p>
+
+  <form class="ax-form" method="post">
+    <div class="ax-field">
+      <label for="otp">Verification code</label>
+      <input type="text" id="otp" name="otp" inputmode="numeric" pattern="[0-9]{6}"
+             minlength="6" maxlength="6" required autofocus autocomplete="one-time-code"
+             placeholder="123456" style="letter-spacing:8px;font-size:1.3rem;text-align:center">
+    </div>
+    <button class="btn green" type="submit">Verify code</button>
+  </form>
+
+  <form method="post" class="ax-alt" style="margin-top:14px">
+    <input type="hidden" name="action" value="resend">
+    Did not get it?
+    <button type="submit" class="ax-link" style="background:none;border:0;padding:0;cursor:pointer;font:inherit">Send a new code</button>
+  </form>
+
+  <p class="ax-alt"><a href="{{ url_for('auth.login') }}">&larr; Back to log in</a></p>
+{% endblock %}

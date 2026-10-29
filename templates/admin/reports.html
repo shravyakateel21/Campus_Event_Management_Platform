@@ -48,15 +48,15 @@
     {% else %}<p class="meta">No data yet.</p>{% endif %}
   </div>
 
-  <div class="card">
+    <div class="card">
     <h3>Most active students</h3>
     {% if top_students %}
       <div class="table-wrap" style="border:none">
         <table>
-          <thead><tr><th>Student</th><th>USN</th><th class="num">Events attended</th></tr></thead>
+          <thead><tr><th>Student</th><th class="num">Events attended</th></tr></thead>
           <tbody>
             {% for s in top_students %}
-            <tr><td>{{ s.name }}</td><td>{{ s.usn or '-' }}</td><td class="num">{{ s.events_attended }}</td></tr>
+            <tr><td>{{ s.name }}</td><td class="num">{{ s.events_attended }}</td></tr>
             {% endfor %}
           </tbody>
         </table>
