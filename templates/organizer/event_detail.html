@@ -82,9 +82,9 @@
 {% endif %}
 
 {% if event.status != 'cancelled' %}
-  {% if event.end_datetime < now %}
+  {% if event.start_datetime <= now %}
     <div style="margin-top:20px">
-      <button class="btn btn-danger btn-small" type="button" disabled title="This event is over and can no longer be cancelled">Cancel event</button>
+      <button class="btn btn-danger btn-small" type="button" disabled title="This event has started and can no longer be cancelled">Cancel event</button>
     </div>
   {% else %}
     <form method="post" action="{{ url_for('organizer.cancel_event', event_id=event.id) }}" style="margin-top:20px"

@@ -70,6 +70,7 @@ def resolve(event_department=None, organizer_department=None):
     return DEFAULT_DEPARTMENT, DEPARTMENTS[DEFAULT_DEPARTMENT]
 
 
+
 def signature_path(filename):
     if not filename:
         return None

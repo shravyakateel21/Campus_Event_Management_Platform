@@ -111,12 +111,12 @@ def review_event(event_id):
         flash("Choose approve or reject.", "error")
         return redirect(url_for("admin.events"))
 
-    event = db.query_one("SELECT title, end_datetime FROM events WHERE id = %s", (event_id,))
+    event = db.query_one("SELECT title, start_datetime FROM events WHERE id = %s", (event_id,))
     if event is None:
         flash("That event no longer exists.", "error")
         return redirect(url_for("admin.events"))
-    if decision == "cancelled" and event["end_datetime"] < datetime.now():
-        flash("This event is over and can no longer be cancelled.", "error")
+    if decision == "cancelled" and event["start_datetime"] <= datetime.now():
+        flash("This event has already started and can no longer be cancelled.", "error")
         return redirect(request.referrer or url_for("admin.events"))
 
     db.execute("UPDATE events SET status = %s, review_note = %s WHERE id = %s",

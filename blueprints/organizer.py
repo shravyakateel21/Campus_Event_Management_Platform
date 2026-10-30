@@ -307,8 +307,8 @@ def event_feedback(event_id):
 @role_required("organizer", "admin")
 def cancel_event(event_id):
     event = _owned_event(event_id)
-    if event["end_datetime"] < datetime.now():
-        flash("This event is over and can no longer be cancelled.", "error")
+    if event["start_datetime"] <= datetime.now():
+        flash("This event has already started and can no longer be cancelled.", "error")
         return redirect(url_for("organizer.event_detail", event_id=event_id))
     db.execute("UPDATE events SET status = 'cancelled' WHERE id = %s", (event_id,))
     flash(f"'{event['title']}' is cancelled and no longer listed for students.", "success")
