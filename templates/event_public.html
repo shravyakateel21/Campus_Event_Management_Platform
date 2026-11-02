@@ -57,6 +57,7 @@
         <li><span>Venue</span><b>{{ event.venue }}</b></li>
         <li><span>Registration closes</span><b>{{ event.registration_deadline|dt }}</b></li>
         <li><span>Seats</span><b>{{ seats_left }} of {{ event.capacity }} left</b></li>
+        <li><span>Open to</span><b>{% if event.open_to_all %}All departments{% else %}{{ departments[event.department].name if event.department in departments else event.department }} students only{% endif %}</b></li>
       </ul>
 
       {% if registration_open and not g.user %}

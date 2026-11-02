@@ -8,6 +8,7 @@ from flask import (Blueprint, abort, current_app, flash, g, redirect,
 
 import certificates as cert
 import db
+import departments
 import wifi
 from security import role_required
 from mailer import send_email
@@ -44,6 +45,11 @@ def _student_event(event_id):
     return event
 
 
+def _student_department():
+    """The student's department as a code (for example 'MCA'), or None if it is blank or unknown."""
+    return departments.code_for(g.user.get("department"))
+
+
 def _registration_state(event):
     """Why a student can or cannot register right now."""
     now = datetime.now()
@@ -52,11 +58,19 @@ def _registration_state(event):
         return False, "You are registered for this event."
     if event["end_datetime"] < now:
         return False, "This event is over."
+    if not event.get("open_to_all", 1):
+        event_dept, info = departments.resolve(event.get("department"))
+        if _student_department() != event_dept:
+            message = f"This event is only for students of the Department of {info['name']}."
+            if _student_department() is None:
+                message += " Set your department on your profile page."
+            return False, message
     if event["registration_deadline"] < now:
         return False, "Registration closed on " + event["registration_deadline"].strftime("%d %b, %I:%M %p") + "."
     if event["registered_count"] >= event["capacity"]:
         return False, "All seats are taken."
     return True, ""
+
 
 def _add_attendance_state(rows, sid):
     """Give each event row: attended (bool) and the attendance window (opens / closes)."""
@@ -68,14 +82,17 @@ def _add_attendance_state(rows, sid):
         row["attendance_opens"], row["attendance_closes"] = wifi.attendance_window(
             row, cfg["ATTENDANCE_OPENS_BEFORE_MIN"], cfg["ATTENDANCE_CLOSES_AFTER_MIN"])
 
+
 @student_bp.route("/")
 @role_required("student")
 def dashboard():
     sid = g.user["id"]
+    dept = _student_department()
     upcoming = db.query_all(
         EVENT_WITH_COUNTS +
         " WHERE e.status = 'approved' AND e.end_datetime >= NOW()"
-        " ORDER BY e.start_datetime LIMIT 6", ())
+        " AND (e.open_to_all = 1 OR e.department = %s)"
+        " ORDER BY e.start_datetime LIMIT 6", (dept,))
     my_next = db.query_all(
         EVENT_WITH_COUNTS +
         " JOIN registrations r ON r.event_id = e.id AND r.student_id = %s"
@@ -99,8 +116,11 @@ def events():
     category = request.args.get("category", "").strip()
     show_past = request.args.get("past") == "1"
 
-    sql = EVENT_WITH_COUNTS + " WHERE e.status = 'approved'"
-    params = []
+    # Department-only events are shown just to students of that department.
+    dept = _student_department()
+    sql = (EVENT_WITH_COUNTS + " WHERE e.status = 'approved'"
+           " AND (e.open_to_all = 1 OR e.department = %s)")
+    params = [dept]
     if not show_past:
         sql += " AND e.end_datetime >= NOW()"
     if keyword:
@@ -119,7 +139,8 @@ def events():
         row["is_registered"] = row["id"] in my_ids
 
     categories = [r["category"] for r in db.query_all(
-        "SELECT DISTINCT category FROM events WHERE status = 'approved' ORDER BY category")]
+        "SELECT DISTINCT category FROM events WHERE status = 'approved'"
+        " AND (open_to_all = 1 OR department = %s) ORDER BY category", (dept,))]
     return render_template("student/events.html", events=rows, categories=categories,
                            keyword=keyword, category=category, show_past=show_past)
 
@@ -303,7 +324,7 @@ def feedback(event_id):
             flash("Thanks for the feedback. We couldn't e-mail your certificate right now - "
                   "you can download it from the Certificates page.", "success")
         return redirect(url_for("student.event_detail", event_id=event_id))
-        
+
     return render_template("student/feedback.html", event=event,
                            comments=(event["my_feedback"] or {}).get("comments", ""))
 
@@ -311,6 +332,7 @@ def feedback(event_id):
 # --------------------------------------------------------------------------
 # Certificates
 # --------------------------------------------------------------------------
+
 def _issue_certificate(event, sid):
     """Return this student's certificate record, creating it on first use."""
     record = event["my_certificate"]
@@ -356,7 +378,8 @@ def _email_certificate(event):
     except Exception as exc:
         current_app.logger.error("Certificate e-mail failed: %s", exc)
         return False
-    
+
+
 @student_bp.route("/certificates")
 @role_required("student")
 def certificate_list():
@@ -385,32 +408,34 @@ def certificate_download(event_id):
         flash("A certificate needs a recorded attendance for this event.", "error")
         return redirect(url_for("student.event_detail", event_id=event_id))
 
-    # feedback must be submitted first
     if not event["my_feedback"]:
         flash("Please submit your feedback before downloading the certificate.", "error")
         return redirect(url_for("student.feedback", event_id=event_id))
 
-    record = event["my_certificate"]
-    if record is None:
-        code = cert.new_certificate_code(event_id, sid)
-        try:
-            db.execute("INSERT INTO certificates (event_id, student_id, certificate_code) "
-                       "VALUES (%s, %s, %s)", (event_id, sid, code))
-        except mysql.connector.IntegrityError:
-            pass  # another tab issued it a moment ago
-        record = db.query_one(
-            "SELECT * FROM certificates WHERE event_id = %s AND student_id = %s",
-            (event_id, sid))
-
-    pdf = cert.build_certificate_pdf(
-        student=g.user, event=event, certificate=record,
-        college_name=current_app.config["COLLEGE_NAME"],
-        signatory=current_app.config["CERTIFICATE_SIGNATORY"])
-    filename = f"certificate-{event['title'][:30].replace(' ', '-').lower()}.pdf"
+    record = _issue_certificate(event, sid)
+    pdf = _certificate_pdf(event, record)
     return send_file(pdf, mimetype="application/pdf",
-                     as_attachment=True, download_name=filename)
+                     as_attachment=True, download_name=_certificate_filename(event))
+
 
 @student_bp.route("/profile")
 @role_required("student")
 def profile():
-    return render_template("student/profile.html", user=g.user)
+    return render_template("student/profile.html", user=g.user,
+                           dept_code=_student_department())
+
+
+@student_bp.route("/profile/department", methods=["POST"])
+@role_required("student")
+def set_department():
+    """A student whose department is blank or unrecognised can set it once."""
+    if _student_department():
+        flash("Your department is already set. Ask the administrator to change it.", "error")
+        return redirect(url_for("student.profile"))
+    code = request.form.get("department", "").strip().upper()
+    if code not in departments.DEPARTMENTS:
+        flash("Choose your department.", "error")
+        return redirect(url_for("student.profile"))
+    db.execute("UPDATE users SET department = %s WHERE id = %s", (code, g.user["id"]))
+    flash("Department saved.", "success")
+    return redirect(url_for("student.profile"))

@@ -14,6 +14,7 @@
     <div class="net-line"><span>Venue</span><b>{{ event.venue }}</b></div>
     <div class="net-line"><span>Seats</span><b>{{ event.registered_count }} / {{ event.capacity }}</b></div>
     <div class="net-line"><span>Registration closes</span><b>{{ event.registration_deadline|dt }}</b></div>
+    <div class="net-line"><span>Open to</span><b>{% if event.open_to_all %}All departments{% else %}{{ departments[event.department].name if event.department in departments else event.department }} students only{% endif %}</b></div>
     {% if event.wifi_ssid %}
       <div class="net-line"><span>Attendance network</span><b>{{ event.wifi_ssid }}</b></div>
     {% endif %}

@@ -24,14 +24,15 @@ def dashboard():
         "students": db.scalar("SELECT COUNT(*) FROM users WHERE role = 'student'"),
         "organizers": db.scalar("SELECT COUNT(*) FROM users WHERE role = 'organizer'"),
         "events": db.scalar("SELECT COUNT(*) FROM events"),
-        "pending": db.scalar("SELECT COUNT(*) FROM events WHERE status = 'pending'"),
+        "pending": db.scalar("SELECT COUNT(*) FROM events e JOIN users u ON u.id = e.organizer_id "
+            "WHERE e.status = 'pending' AND u.role <> 'admin'"),
         "registrations": db.scalar("SELECT COUNT(*) FROM registrations WHERE status = 'registered'"),
         "attendance": db.scalar("SELECT COUNT(*) FROM attendance"),
         "certificates": db.scalar("SELECT COUNT(*) FROM certificates"),
     }
     pending = db.query_all(
         "SELECT e.*, u.name AS organizer_name FROM events e JOIN users u ON u.id = e.organizer_id"
-        " WHERE e.status = 'pending' ORDER BY e.start_datetime")
+        " WHERE e.status = 'pending' AND u.role <> 'admin' ORDER BY e.start_datetime")
     upcoming = db.query_all(
         "SELECT e.*, u.name AS organizer_name,"
         " (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status='registered') AS registered_count"
@@ -46,7 +47,7 @@ def dashboard():
 @role_required("admin")
 def events():
     status = request.args.get("status", "").strip()
-    sql = ("SELECT e.*, u.name AS organizer_name,"
+    sql = ("SELECT e.*, u.name AS organizer_name, u.role AS organizer_role,"
            " (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.status='registered') AS registered_count,"
            " (SELECT COUNT(*) FROM attendance a WHERE a.event_id = e.id) AS attended_count"
            " FROM events e JOIN users u ON u.id = e.organizer_id")
@@ -59,7 +60,8 @@ def events():
                            status=status)
 
 EVENT_FIELDS = ("title", "description", "category", "venue", "start_datetime", "end_datetime",
-                "registration_deadline", "capacity", "wifi_ssid", "wifi_cidr", "wifi_public_ip","department")
+                "registration_deadline", "capacity", "wifi_ssid", "wifi_cidr", "wifi_public_ip",
+                "department", "open_to_all")
 
 
 @admin_bp.route("/events/new", methods=["GET", "POST"])
@@ -93,8 +95,8 @@ def create_event():
         db.execute(
             "INSERT INTO events (title, description, category, venue, start_datetime,"
             " end_datetime, registration_deadline, capacity, wifi_ssid, wifi_cidr,"
-            " wifi_public_ip, department, organizer_id, status)"
-            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'approved')",
+            " wifi_public_ip, department, open_to_all, organizer_id, status)"
+            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'approved')",
             values + (owner_id,))
         flash(f"'{form['title']}' has been added and is visible to students.", "success")
         return redirect(url_for("admin.events"))
@@ -111,10 +113,15 @@ def review_event(event_id):
         flash("Choose approve or reject.", "error")
         return redirect(url_for("admin.events"))
 
-    event = db.query_one("SELECT title, start_datetime FROM events WHERE id = %s", (event_id,))
+    event = db.query_one(
+        "SELECT e.title, e.start_datetime, u.role AS organizer_role FROM events e "
+        "JOIN users u ON u.id = e.organizer_id WHERE e.id = %s", (event_id,))
     if event is None:
         flash("That event no longer exists.", "error")
         return redirect(url_for("admin.events"))
+    if event["organizer_role"] == "admin" and decision != "cancelled":
+        flash("Events created by an administrator don't need approval.", "error")
+        return redirect(request.referrer or url_for("admin.events"))
     if decision == "cancelled" and event["start_datetime"] <= datetime.now():
         flash("This event has already started and can no longer be cancelled.", "error")
         return redirect(request.referrer or url_for("admin.events"))
@@ -125,7 +132,6 @@ def review_event(event_id):
                "rejected": "rejected", "cancelled": "cancelled"}[decision]
     flash(f"'{event['title']}' is {wording}.", "success")
     return redirect(request.referrer or url_for("admin.events"))
-
 
 @admin_bp.route("/events/<int:event_id>/extend-registration", methods=["POST"])
 @role_required("admin")

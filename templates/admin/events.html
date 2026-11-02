@@ -46,12 +46,13 @@
         </td>
         <td>
           <form method="post" action="{{ url_for('admin.review_event', event_id=e.id) }}" style="display:flex;gap:6px">
-            {% if e.status != 'approved' %}
+            {# Approve / Reject only for events an organizer submitted #}
+            {% if e.status != 'approved' and e.organizer_role != 'admin' %}
               <button class="btn btn-small" name="decision" value="approved" type="submit">Approve</button>
             {% endif %}
-            {% if e.status == 'pending' %}
+            {% if e.status == 'pending' and e.organizer_role != 'admin' %}
               <button class="btn btn-danger btn-small" name="decision" value="rejected" type="submit">Reject</button>
-              {% elif e.status == 'approved' %}
+            {% elif e.status == 'approved' %}
               {% if e.start_datetime <= now %}
                 <button class="btn btn-danger btn-small" type="button" disabled title="This event has started and can no longer be cancelled">Cancel</button>
               {% else %}

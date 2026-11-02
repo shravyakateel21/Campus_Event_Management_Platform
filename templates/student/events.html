@@ -35,6 +35,7 @@
       <article class="card event-card">
         <div class="split">
           <span class="tag tag-accent">{{ e.category }}</span>
+          {% if not e.open_to_all %}<span class="tag">{{ e.department }} only</span>{% endif %}
           {% if e.is_registered %}<span class="tag tag-approved">Registered</span>{% endif %}
         </div>
         <h3>{{ e.title }}</h3>

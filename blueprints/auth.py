@@ -11,6 +11,7 @@ from flask import (Blueprint, current_app, flash, g, redirect, render_template,
 from werkzeug.security import check_password_hash, generate_password_hash
 
 import db
+import departments
 import mailer
 import security
 
@@ -101,6 +102,9 @@ def register():
             errors.append("Enter your full name.")
         if not EMAIL_RE.match(form["email"]):
             errors.append("Enter a valid email address.")
+        form["department"] = form["department"].upper()
+        if form["department"] not in departments.DEPARTMENTS:
+            errors.append("Choose your department.")
         problem = security.password_error(password)
         if problem:
             errors.append(problem)
@@ -118,7 +122,7 @@ def register():
             "INSERT INTO users (name, email, password_hash, role, department, phone) "
             "VALUES (%s, %s, %s, 'student', %s, %s)",
             (form["name"], form["email"], generate_password_hash(password),
-             form["department"] or None, form["phone"] or None),
+             form["department"], form["phone"] or None),
         )
         flash("Account created. Log in to continue.", "success")
         return redirect(url_for("auth.login", next=next_url))

@@ -75,6 +75,14 @@ def _ensure_reminder_column(app):
         if not has_column:
             db.execute("ALTER TABLE registrations ADD COLUMN reminder_sent_at DATETIME DEFAULT NULL")
 
+def _ensure_open_to_all_column(app):
+    """Add events.open_to_all (department-only events) if it is missing. Old events stay open."""
+    with app.app_context():
+        has_column = db.scalar(
+            "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() "
+            "AND table_name = 'events' AND column_name = 'open_to_all'")
+        if not has_column:
+            db.execute("ALTER TABLE events ADD COLUMN open_to_all TINYINT(1) NOT NULL DEFAULT 1")
 
 def _home_data():
     """Live numbers and upcoming events for the public landing page."""
@@ -100,6 +108,7 @@ def create_app(config_object=Config):
     _ensure_default_admin(app)
     _ensure_password_reset_table(app)
     _ensure_reminder_column(app)
+    _ensure_open_to_all_column(app)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(student_bp)

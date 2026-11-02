@@ -486,13 +486,20 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .hp .ax-form { display: grid; gap: 15px; }
 .hp .ax-field { display: grid; gap: 5px; }
 .hp .ax-field label { font-size: .78rem; font-weight: 600; color: var(--ink); }
-.hp .ax-field input { width: 100%; padding: 11px 13px; font: inherit; font-size: .9rem; color: var(--ink); background: #fff; border: 1.5px solid var(--line); border-radius: 7px; }
-.hp .ax-field input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(30, 91, 214, .15); }
+.hp .ax-field input, .hp .ax-field select { width: 100%; padding: 11px 13px; font: inherit; font-size: .9rem; color: var(--ink); background: #fff; border: 1.5px solid var(--line); border-radius: 7px; }
+.hp .ax-field input:focus, .hp .ax-field select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(30, 91, 214, .15); }
+/* drop-down: same look as the text boxes, with our own arrow instead of the browser default */
+.hp .ax-field select { -webkit-appearance: none; appearance: none; padding-right: 40px; cursor: pointer; text-overflow: ellipsis;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%236b7a99' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 14px center; }
+.hp .ax-field select:invalid { color: var(--muted); }
+.hp .ax-field select option { color: var(--ink); }
 .hp .ax-field .hint, .hp .ax-hint { margin: 0; font-size: .72rem; color: var(--muted); }
 .hp .ax-labelrow { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .hp .ax-link { font-size: .75rem; color: var(--blue); }
 .hp .ax-link:hover { text-decoration: underline; }
+.hp button.ax-link { background: none; border: 0; padding: 0; font: inherit; font-size: .75rem; cursor: pointer; }
 .hp .ax-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.hp .ax-row > .ax-field { min-width: 0; }
 .hp .ax-form .btn { width: 100%; padding: 12px; font-size: .9rem; border-radius: 7px; }
 
 .hp .ax-alt { margin: 22px 0 0; text-align: center; font-size: .84rem; color: var(--muted); }

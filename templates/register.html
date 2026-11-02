@@ -15,15 +15,18 @@
       <label for="email">Email</label>
       <input type="email" id="email" name="email" value="{{ form.email }}" required autocomplete="email">
     </div>
-    <div class="ax-row">
-      <div class="ax-field">
-        <label for="department">Department</label>
-        <input type="text" id="department" name="department" value="{{ form.department }}" required autocomplete="organization">
-      </div>
-      <div class="ax-field">
-        <label for="phone">Phone (optional)</label>
-        <input type="text" id="phone" name="phone" value="{{ form.phone }}" autocomplete="tel">
-      </div>
+    <div class="ax-field">
+      <label for="department">Department</label>
+      <select id="department" name="department" required>
+        <option value="">Select your department</option>
+        {% for code, d in departments.items() %}
+          <option value="{{ code }}" {% if form.department == code %}selected{% endif %}>{{ d.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="ax-field">
+      <label for="phone">Phone (optional)</label>
+      <input type="tel" id="phone" name="phone" value="{{ form.phone }}" autocomplete="tel">
     </div>
     <div class="ax-row">
       <div class="ax-field">

@@ -34,6 +34,13 @@
   </select>
   <span class="hint">The HOD of this department signs the participation certificates.</span>
 </div>
+    <div class="field">
+  <label style="display:flex;gap:8px;align-items:center;font-weight:600">
+    <input type="checkbox" name="open_to_all" value="1" {% if form.open_to_all %}checked{% endif %} style="width:auto">
+    Open to students of all departments
+  </label>
+  <span class="hint">Leave this unticked to allow only students of the organizing department to see and register for this event.</span>
+</div>
   </fieldset>
 
   <fieldset>

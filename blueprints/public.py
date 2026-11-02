@@ -13,7 +13,7 @@ public_bp = Blueprint("public", __name__)
 PUBLIC_EVENT_SQL = """
     SELECT e.id, e.title, e.description, e.category, e.venue,
            e.start_datetime, e.end_datetime, e.registration_deadline,
-           e.capacity, e.status, u.name AS organizer_name,
+            e.capacity, e.status, e.department, e.open_to_all, u.name AS organizer_name,
            (SELECT COUNT(*) FROM registrations r
              WHERE r.event_id = e.id AND r.status = 'registered') AS registered_count
     FROM events e

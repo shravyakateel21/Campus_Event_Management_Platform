@@ -69,7 +69,20 @@ def resolve(event_department=None, organizer_department=None):
                 return code, info
     return DEFAULT_DEPARTMENT, DEPARTMENTS[DEFAULT_DEPARTMENT]
 
+def code_for(raw):
+    """Department code for a typed value ('mca', 'MCA', a full name), or None if unknown.
 
+    Unlike resolve(), this never falls back to a default, so it is safe for access checks.
+    """
+    key = (raw or "").strip().upper()
+    if not key:
+        return None
+    if key in DEPARTMENTS:
+        return key
+    for code, info in DEPARTMENTS.items():
+        if info["name"].upper() == key:
+            return code
+    return None
 
 def signature_path(filename):
     if not filename:

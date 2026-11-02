@@ -5,7 +5,26 @@
 <h1>{{ user.name }}</h1>
 <div class="card" style="max-width:520px">
   <div class="net-line"><span>Email</span><b>{{ user.email }}</b></div>
-  <div class="net-line"><span>Department</span><b>{{ user.department or '-' }}</b></div>
+  <div class="net-line"><span>Department</span><b>{{ departments[dept_code].name if dept_code else (user.department or 'Not set') }}</b></div>
   <div class="net-line"><span>Role</span><b>{{ user.role }}</b></div>
 </div>
+
+{% if not dept_code %}
+<div class="card" style="max-width:520px;margin-top:16px">
+  <h3>Set your department</h3>
+  <p class="meta">Department-only events are shown to students of that department. You can set this once.</p>
+  <form method="post" action="{{ url_for('student.set_department') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+    <div class="field" style="flex:1;min-width:220px">
+      <label for="department">Department</label>
+      <select id="department" name="department" required>
+        <option value="">Select department</option>
+        {% for code, d in departments.items() %}
+          <option value="{{ code }}">{{ d.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn" type="submit">Save</button>
+  </form>
+</div>
+{% endif %}
 {% endblock %}

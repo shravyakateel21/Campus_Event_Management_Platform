@@ -53,6 +53,7 @@ def _read_event_form():
         "wifi_cidr": request.form.get("wifi_cidr", "").strip(),
         "wifi_public_ip": request.form.get("wifi_public_ip", "").strip(),
         "department": request.form.get("department", "").strip().upper(),
+        "open_to_all": "1" if request.form.get("open_to_all") else "",
     }
     errors = []
 
@@ -95,10 +96,11 @@ def _read_event_form():
 
     values = None
     if not errors:
-        values = (form["title"], form["description"] or None, form["category"], form["venue"],
+                values = (form["title"], form["description"] or None, form["category"], form["venue"],
                   start, end, deadline, capacity,
                   form["wifi_ssid"] or None, form["wifi_cidr"] or None,
-                  form["wifi_public_ip"] or None, form["department"])
+                  form["wifi_public_ip"] or None, form["department"],
+                  1 if form["open_to_all"] else 0)
     return form, errors, values
 
 
@@ -130,7 +132,8 @@ def dashboard():
 def create_event():
     form = {k: "" for k in ("title", "description", "category", "venue", "start_datetime",
                             "end_datetime", "registration_deadline", "capacity",
-                            "wifi_ssid", "wifi_cidr", "wifi_public_ip", "department")}
+                            "wifi_ssid", "wifi_cidr", "wifi_public_ip", "department",
+                            "open_to_all")}
     form["capacity"] = "100"
     form["department"], _ = departments.resolve(None, g.user.get("department"))
 
@@ -141,17 +144,21 @@ def create_event():
                 flash(message, "error")
             return render_template("organizer/event_form.html", form=form, event=None)
 
+        # Events an administrator creates need no approval; organizers' events do.
+        status = "approved" if g.user["role"] == "admin" else "pending"
         event_id = db.execute(
             "INSERT INTO events (title, description, category, venue, start_datetime,"
             " end_datetime, registration_deadline, capacity, wifi_ssid, wifi_cidr,"
-            " wifi_public_ip, department, organizer_id, status)"
-            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending')",
-            values + (g.user["id"],))
-        flash("Event saved and sent to the administrator for approval.", "success")
+            " wifi_public_ip, department, open_to_all, organizer_id, status)"
+            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            values + (g.user["id"], status))
+        if status == "approved":
+            flash("Event saved and visible to students.", "success")
+        else:
+            flash("Event saved and sent to the administrator for approval.", "success")
         return redirect(url_for("organizer.event_detail", event_id=event_id))
 
     return render_template("organizer/event_form.html", form=form, event=None)
-
 
 @organizer_bp.route("/events/<int:event_id>/edit", methods=["GET", "POST"])
 @role_required("organizer", "admin")
@@ -174,13 +181,17 @@ def edit_event(event_id):
                 flash(message, "error")
             return render_template("organizer/event_form.html", form=form, event=event)
 
-        # An edit to an approved event sends it back for approval, so the
-        # admin always sees the details students will be shown.
-        new_status = "pending" if event["status"] in ("approved", "rejected") else event["status"]
+                # An organizer's edit sends the event back for approval; an administrator
+        # is the approver, so an admin's edit keeps the status as it is.
+        if g.user["role"] != "admin" and event["status"] in ("approved", "rejected"):
+            new_status = "pending"
+        else:
+            new_status = event["status"]
         db.execute(
             "UPDATE events SET title=%s, description=%s, category=%s, venue=%s,"
             " start_datetime=%s, end_datetime=%s, registration_deadline=%s, capacity=%s,"
-            " wifi_ssid=%s, wifi_cidr=%s, wifi_public_ip=%s, department=%s, status=%s, review_note=NULL"
+            " wifi_ssid=%s, wifi_cidr=%s, wifi_public_ip=%s, department=%s, open_to_all=%s,"
+            " status=%s, review_note=NULL"
             " WHERE id=%s", values + (new_status, event_id))
         flash("Event updated." + (" It needs approval again." if new_status == "pending" else ""),
               "success")
@@ -196,6 +207,7 @@ def edit_event(event_id):
         "wifi_ssid": event["wifi_ssid"] or "", "wifi_cidr": event["wifi_cidr"] or "",
         "wifi_public_ip": event["wifi_public_ip"] or "",
         "department": departments.resolve(event.get("department"), None)[0],
+        "open_to_all": "1" if event.get("open_to_all") else "",
     }
     return render_template("organizer/event_form.html", form=form, event=event)
 
