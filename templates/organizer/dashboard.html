@@ -41,10 +41,10 @@
         {% if show_actions %}
         <td>
           {% if e.status != 'rejected' %}
-            {% if e.status == 'pending' %}
-              {% if e.start_datetime <= now %}
+              {% if e.status == 'pending' %}
+              {% if e.end_datetime < now %}
                 <button class="btn btn-quiet btn-small" type="button" disabled
-                        title="This event has started and can no longer be edited">Edit</button>
+                        title="This event is over and can no longer be edited">Edit</button>
               {% else %}
                 <a class="btn btn-quiet btn-small" href="{{ url_for('organizer.edit_event', event_id=e.id) }}">Edit</a>
               {% endif %}

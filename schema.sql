@@ -37,7 +37,7 @@ CREATE TABLE events (
   description           TEXT,
   category              VARCHAR(60)  NOT NULL DEFAULT 'General',
   department            VARCHAR(20)  DEFAULT NULL,
-    open_to_all           TINYINT(1)   NOT NULL DEFAULT 1,  -- 1 = every department, 0 = only 'department'
+  open_to_all           TINYINT(1)   NOT NULL DEFAULT 1,  -- 1 = every department, 0 = only 'department'
   venue                 VARCHAR(160) NOT NULL,
   start_datetime        DATETIME     NOT NULL,
   end_datetime          DATETIME     NOT NULL,

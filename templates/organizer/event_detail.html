@@ -8,10 +8,10 @@
     <p class="lede">{{ event.start_datetime|dt }} · {{ event.venue }}</p>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
-    {% if event.status == 'pending' or g.user.role == 'admin' %}
-      {% if event.start_datetime <= now %}
+       {% if event.status == 'pending' or g.user.role == 'admin' %}
+      {% if event.end_datetime < now %}
         <button class="btn btn-quiet" type="button" disabled
-                title="This event has started and can no longer be edited">Edit</button>
+                title="This event is over and can no longer be edited">Edit</button>
       {% else %}
         <a class="btn btn-quiet" href="{{ url_for('organizer.edit_event', event_id=event.id) }}">Edit</a>
       {% endif %}

@@ -8,7 +8,7 @@ DEFAULT_DEPARTMENT = "MCA"
 PRINCIPAL = {
     "name": "Dr Ashok Kumar T",        # TODO: put the real name
     "title": "Principal",
-    "signature": "principal.jpeg",         # save in static/signatures/
+    "signature": "principal.jpg",         # save in static/signatures/
 }
 
 DEPARTMENTS = {
@@ -22,37 +22,37 @@ DEPARTMENTS = {
         "name": "Computer Science & Engineering",
         "hod_name": "Dr Antony P J",
         "hod_title": "Head- CSE",
-        "hod_signature": "CSE_hod.jpeg",
+        "hod_signature": "CSE_hod.jpg",
     },
     "ISE": {
         "name": "Information Science & Engineering",
         "hod_name": "Dr John Prakash Veigas",
         "hod_title": "Head- ISE",
-        "hod_signature": "ISE_hod.jpeg",
+        "hod_signature": "ISE_hod.jpg",
     },
     "ECE": {
         "name": "Electronics & Communication Engineering",
         "hod_name": "Dr Kiran Kumar V G",
         "hod_title": "Head- ECE",
-        "hod_signature": "ECE_hod.jpeg",
+        "hod_signature": "ECE_hod.jpg",
     },
     "ME": {
         "name": "Mechanical Engineering",
         "hod_name": "Dr Rajesh Rai P",
         "hod_title": "Head- ME",
-        "hod_signature": "ME_hod.jpeg",
+        "hod_signature": "ME_hod.jpg",
     },
     "CV": {
         "name": "Civil Engineering",
         "hod_name": "Dr Suman Kundapura",
         "hod_title": "Head- CV",
-        "hod_signature": "CV_hod.jpeg",
+        "hod_signature": "CV_hod.jpg",
     },
     "MBA": {
         "name": "Master of Business Administration",
         "hod_name": "Dr Prameela S Shetty",
         "hod_title": "Head- MBA",
-        "hod_signature": "MBA_hod.jpeg",
+        "hod_signature": "MBA_hod.jpg",
     }
 }
 
@@ -82,7 +82,7 @@ def code_for(raw):
     for code, info in DEPARTMENTS.items():
         if info["name"].upper() == key:
             return code
-    return None
+    return None 
 
 def signature_path(filename):
     if not filename:

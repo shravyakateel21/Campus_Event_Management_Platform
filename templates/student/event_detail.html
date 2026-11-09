@@ -50,7 +50,7 @@
                   title="Your attendance has already been recorded">Attendance marked</button>
         {% elif attendance_opens <= now <= attendance_closes %}
           <a class="btn" href="{{ url_for('student.attendance', event_id=event.id) }}">Mark attendance</a>
-                {% elif now < attendance_opens %}
+        {% elif now < attendance_opens %}
           <button class="btn btn-outline" type="button" disabled
                   title="Attendance has not opened yet">Attendance opens {{ attendance_opens|dt('%d %b, %I:%M %p') }}</button>
         {% else %}
@@ -64,7 +64,11 @@
             <a class="btn btn-outline" href="{{ url_for('student.feedback', event_id=event.id) }}">Give feedback</a>
           {% endif %}
           <a class="btn btn-outline" href="{{ url_for('student.certificate_download', event_id=event.id) }}">Download certificate</a>
+        {% elif event.my_attendance %}
+          <button class="btn btn-outline" type="button" disabled
+                  title="Available after the event ends on {{ event.end_datetime|dt('%d %b, %I:%M %p') }}">Download certificate</button>
         {% endif %}
+        {# Cancel is offered only before the event starts; after that nothing is shown #}
         {% if event.start_datetime > now and not event.my_attendance %}
           <form method="post" action="{{ url_for('student.cancel_registration', event_id=event.id) }}">
             <button class="btn btn-danger btn-small" type="submit">Cancel registration</button>
